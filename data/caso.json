@@ -1,0 +1,70 @@
+{
+  "id": "caso-2026-0001",
+  "fecha_creacion": "2026-07-30T10:00:00Z",
+  "puesto_id": "puesto-backend-senior-2026",
+
+  "candidato": {
+    "id": "cand-001",
+    "nombre": "Nombre Apellido",
+    "cv": {
+      "formato_original": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Ingeniero de software con 6 años de experiencia en desarrollo backend, especializado en Python y sistemas distribuidos. Ha trabajado en proyectos de instrumentación científica.",
+      "experiencia": [
+        {
+          "empresa": "Empresa A",
+          "puesto": "Ingeniero Backend",
+          "fecha_inicio": "2020-01",
+          "fecha_fin": "2023-06",
+          "descripcion": "Desarrollo de APIs y servicios en Python/PostgreSQL."
+        },
+        {
+          "empresa": "Empresa B",
+          "puesto": "Ingeniero de Software",
+          "fecha_inicio": "2023-07",
+          "fecha_fin": "actualidad",
+          "descripcion": "Desarrollo de software de control para instrumentación científica en C++."
+        }
+      ],
+      "formacion": [
+        { "titulo": "Grado en Ingeniería Informática", "institucion": "Universidad Ejemplo", "anio_fin": 2019 }
+      ],
+      "habilidades_tecnicas": ["Python", "C++", "Docker", "PostgreSQL"],
+      "idiomas": [{ "idioma": "inglés", "nivel": "B2" }],
+      "certificaciones": []
+    }
+  },
+
+  "nodos": [
+    {
+      "id": "n1",
+      "tipo": "rule",
+      "payload": {
+        "regla": "filtro_requisitos_minimos",
+        "descripcion": "Descarta si no cumple los requisitos obligatorios del puesto"
+      }
+    },
+    {
+      "id": "n2",
+      "tipo": "llm",
+      "payload": {
+        "prompt_template": "evaluar_experiencia_relevante",
+        "modelo": "claude-sonnet-4-6",
+        "descripcion": "Analiza el texto del CV frente a los requisitos deseables"
+      }
+    },
+    {
+      "id": "n3",
+      "tipo": "transformacion",
+      "payload": {
+        "accion": "calcular_score_ponderado",
+        "entradas": ["n1", "n2"]
+      }
+    }
+  ],
+
+  "metadata": {
+    "origen": "portal_empleo_xyz",
+    "reclutador_asignado": "..."
+  }
+}

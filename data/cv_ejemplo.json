@@ -1,0 +1,90 @@
+{
+  "id": "caso-370c862b",
+  "fecha_creacion": "2026-07-30T11:56:06Z",
+  "puesto_id": "puesto-backend-senior-2026",
+  "candidato": {
+    "id": "cand-8beb94b2",
+    "nombre": "Marta Suárez Delgado",
+    "cv": {
+      "formato_original": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Marta Suárez Delgado\nSan Cristóbal de La Laguna, Tenerife · marta.suarez.delgado@correo-ejemplo.com · +34 600 000 000\nPerfil profesional\nIngeniera de software con más de 6 años de experiencia en desarrollo backend, especializada en\nPython y sistemas distribuidos. Experiencia reciente en software de control para instrumentación\ncientífica. Nivel de inglés B2.\nExperiencia profesional\nIngeniera de Software — Observatorio Técnico Atlántico\nJulio 2023 – Actualidad\nDesarrollo de software de control para instrumentación científica en C++. Integración con sistemas de\nadquisición de datos en tiempo real y colaboración con el equipo de operaciones.\nIngeniera Backend — Empresa Soluciones Digitales SL\nEnero 2020 – Junio 2023\nDesarrollo de APIs REST y servicios en Python y PostgreSQL para una plataforma de gestión interna.\nContenerización de servicios con Docker y despliegue continuo.\nFormación académica\nGrado en Ingeniería Informática\nUniversidad de La Laguna — 2019\nHabilidades técnicas\nPython, C++, Docker, PostgreSQL, Git, Linux\nIdiomas\nEspañol (nativo) · Inglés (B2)",
+      "experiencia": [
+        {
+          "empresa": "Observatorio Técnico Atlántico",
+          "puesto": "Ingeniera de Software",
+          "fecha_inicio": "2023-07",
+          "fecha_fin": "actualidad",
+          "descripcion": "Desarrollo de software de control para instrumentación científica en C++. Integración con sistemas de adquisición de datos en tiempo real y colaboración con el equipo de operaciones."
+        },
+        {
+          "empresa": "Empresa Soluciones Digitales SL",
+          "puesto": "Ingeniera Backend",
+          "fecha_inicio": "2020-01",
+          "fecha_fin": "2023-06",
+          "descripcion": "Desarrollo de APIs REST y servicios en Python y PostgreSQL para una plataforma de gestión interna. Contenerización de servicios con Docker y despliegue continuo."
+        }
+      ],
+      "formacion": [
+        {
+          "titulo": "Grado en Ingeniería Informática",
+          "institucion": "Universidad de La Laguna",
+          "anio_fin": 2019
+        }
+      ],
+      "habilidades_tecnicas": [
+        "Python",
+        "C++",
+        "Docker",
+        "PostgreSQL",
+        "Git",
+        "Linux"
+      ],
+      "idiomas": [
+        {
+          "idioma": "Español",
+          "nivel": "nativo"
+        },
+        {
+          "idioma": "Inglés",
+          "nivel": "B2"
+        }
+      ],
+      "certificaciones": []
+    }
+  },
+  "nodos": [
+    {
+      "id": "n1",
+      "tipo": "rule",
+      "payload": {
+        "regla": "filtro_requisitos_minimos",
+        "descripcion": "Descarta si no cumple los requisitos obligatorios del puesto"
+      }
+    },
+    {
+      "id": "n2",
+      "tipo": "llm",
+      "payload": {
+        "prompt_template": "evaluar_experiencia_relevante",
+        "modelo": "gpt-4.1-mini6",
+        "descripcion": "Analiza el texto del CV frente a los requisitos deseables"
+      }
+    },
+    {
+      "id": "n3",
+      "tipo": "transformacion",
+      "payload": {
+        "accion": "calcular_score_ponderado",
+        "entradas": [
+          "n1",
+          "n2"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "origen": "pdf:cv_ejemplo.pdf",
+    "reclutador_asignado": "..."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "puesto_id": "puesto-backend-senior-2026",
+  "titulo": "Ingeniero/a Backend Senior",
+  "departamento": "Plataforma",
+  "descripcion": "Diseño e implementación de servicios backend para la plataforma interna.",
+
+  "requisitos_obligatorios": {
+    "experiencia_minima_anios": 5,
+    "formacion_minima": "Grado en Informática o equivalente",
+    "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker"],
+    "idiomas": [{ "idioma": "inglés", "nivel_minimo": "B2" }]
+  },
+
+  "requisitos_deseables": {
+    "habilidades_tecnicas": ["Kubernetes", "LangGraph", "C++"],
+    "experiencia_sectorial": ["astrofísica", "instrumentación científica"],
+    "certificaciones": []
+  },
+
+  "competencias_blandas": ["trabajo en equipo", "comunicación", "autonomía"],
+
+  "criterios_puntuacion": {
+    "peso_experiencia": 0.3,
+    "peso_habilidades_tecnicas": 0.4,
+    "peso_formacion": 0.1,
+    "peso_competencias_blandas": 0.2,
+    "umbral_aprobacion_automatica": 0.75,
+    "umbral_revision_humana": 0.5
+  },
+
+  "condiciones": {
+    "ubicacion": "La Laguna, Tenerife",
+    "modalidad": "híbrido",
+    "rango_salarial": "A convenir"
+  }
+}

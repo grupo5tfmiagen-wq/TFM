@@ -1,0 +1,63 @@
+{
+  "id": "caso-2026-0002",
+  "fecha_creacion": "2026-07-30T10:15:00Z",
+  "puesto_id": "puesto-backend-senior-2026",
+
+  "candidato": {
+    "id": "cand-002",
+    "nombre": "Nombre Apellido 2",
+    "cv": {
+      "formato_original": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Desarrollador backend con experiencia en Python y PostgreSQL en entornos de gestión empresarial, sin exposición a instrumentación científica ni a tecnologías de contenedores a gran escala.",
+      "experiencia": [
+        {
+          "empresa": "Empresa C",
+          "puesto": "Desarrollador Backend",
+          "fecha_inicio": "2018-03",
+          "fecha_fin": "actualidad",
+          "descripcion": "Desarrollo de APIs internas en Python/PostgreSQL para gestión empresarial."
+        }
+      ],
+      "formacion": [
+        { "titulo": "Grado en Ingeniería Informática", "institucion": "Universidad Ejemplo", "anio_fin": 2017 }
+      ],
+      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker"],
+      "idiomas": [{ "idioma": "inglés", "nivel": "B2" }],
+      "certificaciones": []
+    }
+  },
+
+  "nodos": [
+    {
+      "id": "n1",
+      "tipo": "rule",
+      "payload": {
+        "regla": "filtro_requisitos_minimos",
+        "descripcion": "Descarta si no cumple los requisitos obligatorios del puesto"
+      }
+    },
+    {
+      "id": "n2",
+      "tipo": "llm",
+      "payload": {
+        "prompt_template": "evaluar_experiencia_relevante",
+        "modelo": "claude-sonnet-4-6",
+        "descripcion": "Analiza el texto del CV frente a los requisitos deseables"
+      }
+    },
+    {
+      "id": "n3",
+      "tipo": "transformacion",
+      "payload": {
+        "accion": "calcular_score_ponderado",
+        "entradas": ["n1", "n2"]
+      }
+    }
+  ],
+
+  "metadata": {
+    "origen": "portal_empleo_xyz",
+    "reclutador_asignado": "..."
+  }
+}

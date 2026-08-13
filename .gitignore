@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+dag_decision/src/graph/nodes.old.py
+dag_decision/scripts/run_case.julian.py
+dag_decision/src/graph/state.julian.py
+dag_decision/src/graph/nodes.julian.py

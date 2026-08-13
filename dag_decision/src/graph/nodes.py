@@ -15,12 +15,36 @@ devolver una actualizacion parcial del estado de LangGraph. Los nodos que no
 llaman directamente a un LLM se decoran con `@traceable` para que tambien
 aparezcan en LangSmith junto a las llamadas LLM (que se trazan
 automaticamente via variables de entorno).
+
+La logica de negocio de `rule_evaluator_node` y `llm_decision_node` esta
+tomada de `rule_node` / `llm_node` en el prototipo `DAGEngine.py`. El
+`payload` del caso usa las mismas claves en ingles que traen los ficheros
+JSON reales (`case.json` + `job_profile.json`, ver `scripts/run_case.py`).
+La forma esperada es:
+
+    payload = {
+        "candidate": {"cv": {"technical_skills": [...], "experience": [...]}},
+        "job_profile": {
+            "mandatory_requirements": {
+                "technical_skills": [...],
+                "min_years_experience": <int>,
+            },
+            "desired_requirements": {"technical_skills": [...]},
+        },
+    }
+
+No se ha portado el bucle generico de cola de nodos (`carga_del_caso`,
+`dag_engine_selecciona_nodo`, `quedan_nodos`) ni el nodo de transformacion de
+score ponderado del prototipo: `build.py` implementa el Modulo 1 (DAG
+Engine) como un pipeline fijo de 5 nodos con dos bifurcaciones, no como una
+cola generica de nodos por caso, asi que esa parte de DAGEngine.py no aplica
+a esta version productiva.
 """
 from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -55,14 +79,64 @@ def _llm() -> ChatOpenAI:
     return ChatOpenAI(model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
 
 
+def _parse_year_month(value: str | None) -> date | None:
+    """Convierte un valor "YYYY-MM" (formato de `experience` en el CV) a `date`."""
+    if not value:
+        return None
+    year, month = value.split("-")
+    return date(int(year), int(month), 1)
+
+
+def _years_of_experience(experience_entries: list[dict]) -> float:
+    """Suma la duracion de cada entrada de `candidate.cv.experience` (en anios).
+
+    Cada entrada trae `start_date`/`end_date` en formato "YYYY-MM";
+    `end_date` puede venir como "present" para un puesto en curso, en cuyo
+    caso se usa la fecha de hoy. No se corrigen solapamientos entre
+    entradas: se asume que el CV ya viene con periodos no solapados, igual
+    que en el `case.json` de referencia.
+    """
+    total_months = 0
+    for entry in experience_entries:
+        start = _parse_year_month(entry.get("start_date"))
+        end_raw = entry.get("end_date")
+        end = date.today() if end_raw in (None, "present") else _parse_year_month(end_raw)
+        if start is None or end is None:
+            continue
+        total_months += max(0, (end.year - start.year) * 12 + (end.month - start.month))
+    return round(total_months / 12, 1)
+
+
 @traceable(name="rule_evaluator")
 def rule_evaluator_node(state: CaseState) -> dict:
-    """Modulo 2: comprobaciones obligatorias deterministas antes de involucrar al LLM."""
+    """Modulo 2: Rule Evaluator.
+
+    Dos reglas obligatorias, tomadas de `rule_node` en DAGEngine.py mas la de
+    anos de experiencia pedida como ampliacion:
+
+    1. Habilidades tecnicas obligatorias (`job_profile.mandatory_requirements.technical_skills`)
+       frente a las del CV (`candidate.cv.technical_skills`).
+    2. Anos de experiencia minimos (`job_profile.mandatory_requirements.min_years_experience`),
+       calculados a partir del historial `candidate.cv.experience` (ver `_years_of_experience`).
+
+    Si falla cualquiera de las dos, el caso queda descartado (`passed=False`)
+    y `build.py::_route_after_rules` lo envia directamente a
+    `final_decision`, sin pasar por el LLM.
+    """
     payload = state["payload"]
     with traced_node(state["case_id"], "rule_evaluator", payload) as (session, node_execution):
-        min_experience_ok = payload.get("years_experience", 0) >= 2
-        has_required_docs = bool(payload.get("has_cv") and payload.get("has_id_document"))
-        passed = min_experience_ok and has_required_docs
+        cv = payload.get("candidate", {}).get("cv", {})
+        requirements = payload.get("job_profile", {}).get("mandatory_requirements", {})
+
+        candidate_skills = set(cv.get("technical_skills", []))
+        required_skills = set(requirements.get("technical_skills", []))
+        missing_skills = sorted(required_skills - candidate_skills)
+
+        years_experience = _years_of_experience(cv.get("experience", []))
+        min_years_required = requirements.get("min_years_experience", 0)
+        meets_experience = years_experience >= min_years_required
+
+        passed = not missing_skills and meets_experience
 
         session.add(
             RuleEvaluation(
@@ -70,24 +144,50 @@ def rule_evaluator_node(state: CaseState) -> dict:
                 rule_name="candidate_min_requirements",
                 result_bool=passed,
                 details={
-                    "min_experience_ok": min_experience_ok,
-                    "has_required_docs": has_required_docs,
+                    "missing_skills": missing_skills,
+                    "years_experience": years_experience,
+                    "min_years_required": min_years_required,
+                    "meets_experience": meets_experience,
                 },
             )
         )
-        node_execution.output_data = {"passed": passed}
+        node_execution.output_data = {
+            "passed": passed,
+            "missing_skills": missing_skills,
+            "years_experience": years_experience,
+            "min_years_required": min_years_required,
+        }
 
-    return {"rule_result": {"passed": passed}}
+    return {
+        "rule_result": {
+            "passed": passed,
+            "missing_skills": missing_skills,
+            "years_experience": years_experience,
+            "min_years_required": min_years_required,
+        }
+    }
 
 
 @traceable(name="llm_decision")
 def llm_decision_node(state: CaseState) -> dict:
-    """Modulo 3: evaluacion semantica del candidato mediante un LLM."""
+    """Modulo 3: evaluacion semantica del candidato mediante un LLM.
+
+    Incorpora al prompt las habilidades deseables del perfil de puesto — la
+    misma senal que usaba el cociente ad-hoc de `llm_node` en DAGEngine.py —
+    para que el LLM real valore la afinidad del candidato con ellas como
+    parte de su juicio estructurado, en vez de calcularla con una formula.
+    """
     payload = state["payload"]
+    desired_skills = sorted(
+        payload.get("job_profile", {}).get("desired_requirements", {}).get("technical_skills", [])
+    )
     prompt = (
-        "Evalua si el siguiente candidato encaja en el puesto ofertado. "
+        "Evalua si el siguiente candidato encaja en el puesto ofertado, "
+        "prestando especial atencion a su afinidad con las habilidades "
+        "deseables del perfil (no obligatorias, mejoran el ajuste). "
         "Responde de forma estructurada, con una justificacion breve.\n\n"
-        f"Datos del candidato: {payload}"
+        f"Datos del candidato: {payload.get('candidate')}\n\n"
+        f"Habilidades deseables del puesto: {desired_skills}"
     )
     with traced_node(state["case_id"], "llm_decision", {"prompt": prompt}) as (session, node_execution):
         structured_llm = _llm().with_structured_output(CandidateAssessment)
@@ -112,7 +212,15 @@ def llm_decision_node(state: CaseState) -> dict:
 
 @traceable(name="validation")
 def validation_node(state: CaseState) -> dict:
-    """Modulo 4: comprueba la coherencia de la salida del LLM antes de confiar en ella."""
+    """Modulo 4: comprueba la coherencia de la salida del LLM antes de confiar en ella.
+
+    El detalle completo (is_valid, motivo, requires_review) queda persistido
+    en la fila `Validation` de este nodo via `traced_node`; al grafo solo le
+    hace falta `requires_human` para decidir la ruta en
+    `build.py::_route_after_validation`, asi que es lo unico que se devuelve
+    al estado (ver la nota en `state.py` sobre por que se elimino el campo
+    `validation`).
+    """
     llm_decision = state["llm_decision"]
     with traced_node(state["case_id"], "validation", {"llm_decision": llm_decision}) as (session, node_execution):
         confidence = llm_decision.get("confidence", 0.0)
@@ -132,10 +240,7 @@ def validation_node(state: CaseState) -> dict:
         )
         node_execution.output_data = {"is_valid": is_valid, "requires_review": requires_review}
 
-    return {
-        "validation": {"is_valid": is_valid, "requires_review": requires_review},
-        "requires_human": requires_review,
-    }
+    return {"requires_human": requires_review}
 
 
 def human_escalation_node(state: CaseState) -> dict:
@@ -199,7 +304,7 @@ def final_decision_node(state: CaseState) -> dict:
     consolidated = {
         "rule_result": state.get("rule_result"),
         "llm_decision": state.get("llm_decision"),
-        "validation": state.get("validation"),
+        "requires_human": state.get("requires_human"),
         "human_feedback": state.get("human_feedback"),
     }
     with traced_node(case_id, "final_decision", consolidated) as (session, node_execution):

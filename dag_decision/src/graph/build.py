@@ -20,7 +20,7 @@ from .state import CaseState
 
 
 def _route_after_rules(state: CaseState) -> str:
-    return "llm_decision" if state["rule_result"]["passed"] else "final_decision"
+    return "llm_decision" if state["rule_result"]["passed"] else "final_decision" # type: ignore
 
 
 def _route_after_validation(state: CaseState) -> str:

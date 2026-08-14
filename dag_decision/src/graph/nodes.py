@@ -123,8 +123,8 @@ def rule_evaluator_node(state: CaseState) -> dict:
     y `build.py::_route_after_rules` lo envia directamente a
     `final_decision`, sin pasar por el LLM.
     """
-    payload = state["payload"]
-    with traced_node(state["case_id"], "rule_evaluator", payload) as (session, node_execution):
+    payload = state["payload"] # type: ignore
+    with traced_node(state["case_id"], "rule_evaluator", payload) as (session, node_execution): # type: ignore
         cv = payload.get("candidate", {}).get("cv", {})
         requirements = payload.get("job_profile", {}).get("mandatory_requirements", {})
 
@@ -177,7 +177,7 @@ def llm_decision_node(state: CaseState) -> dict:
     para que el LLM real valore la afinidad del candidato con ellas como
     parte de su juicio estructurado, en vez de calcularla con una formula.
     """
-    payload = state["payload"]
+    payload = state["payload"] # type: ignore
     desired_skills = sorted(
         payload.get("job_profile", {}).get("desired_requirements", {}).get("technical_skills", [])
     )
@@ -189,9 +189,9 @@ def llm_decision_node(state: CaseState) -> dict:
         f"Datos del candidato: {payload.get('candidate')}\n\n"
         f"Habilidades deseables del puesto: {desired_skills}"
     )
-    with traced_node(state["case_id"], "llm_decision", {"prompt": prompt}) as (session, node_execution):
+    with traced_node(state["case_id"], "llm_decision", {"prompt": prompt}) as (session, node_execution): # type: ignore
         structured_llm = _llm().with_structured_output(CandidateAssessment)
-        assessment: CandidateAssessment = structured_llm.invoke(prompt)
+        assessment: CandidateAssessment = structured_llm.invoke(prompt) # type: ignore
 
         llm_decision = LlmDecision(
             node_execution_id=node_execution.id,
@@ -221,8 +221,9 @@ def validation_node(state: CaseState) -> dict:
     al estado (ver la nota en `state.py` sobre por que se elimino el campo
     `validation`).
     """
-    llm_decision = state["llm_decision"]
-    with traced_node(state["case_id"], "validation", {"llm_decision": llm_decision}) as (session, node_execution):
+    llm_decision = state["llm_decision"] # type: ignore
+    with traced_node(state["case_id"], "validation", {"llm_decision": llm_decision}) as (session, node_execution): # type: ignore
+        assert llm_decision is not None
         confidence = llm_decision.get("confidence", 0.0)
         fit_label = llm_decision.get("fit_label")
         is_valid = fit_label in {"fit", "not_fit", "unclear"}
@@ -254,7 +255,7 @@ def human_escalation_node(state: CaseState) -> dict:
     sesiones de corta duracion, antes y despues de `interrupt()`, para no
     mantener una conexion abierta mientras el caso esta pausado.
     """
-    case_id = state["case_id"]
+    case_id = state["case_id"] # type: ignore
 
     with SessionLocal() as session:
         escalation = (
@@ -300,7 +301,7 @@ def human_escalation_node(state: CaseState) -> dict:
 @traceable(name="final_decision")
 def final_decision_node(state: CaseState) -> dict:
     """Modulo 6: consolida todo en el resultado oficial del caso."""
-    case_id = state["case_id"]
+    case_id = state["case_id"] # type: ignore
     consolidated = {
         "rule_result": state.get("rule_result"),
         "llm_decision": state.get("llm_decision"),

@@ -4,7 +4,7 @@ Uso (desde `dag_decision/`, con el venv activo y `.env` relleno, incluyendo
 un `OPENAI_API_KEY` real y, opcionalmente, `LANGSMITH_API_KEY`):
 
     .venv\\Scripts\\python scripts\\run_case.py
-    .venv\\Scripts\\python scripts\\run_case.py --case-file scripts\\data\\case.json --job-profile-file scripts\\data\\job_profile.json
+    .venv\\Scripts\\python scripts\\run_case.py --case-file data\\case.json --job-profile-file data\\job_profile.json
 
 Carga el caso desde un fichero JSON con la forma de `scripts/data/case.json`
 (candidato + cola de nodos del DAG) y el perfil de puesto correspondiente
@@ -77,7 +77,7 @@ def main() -> None:
 
     print(f"Case created: {case_id} (source: {loaded['source_case_id']})")
 
-    with get_checkpointer() as checkpointer:
+    with get_checkpointer() as checkpointer: # type: ignore
         graph = build_graph(checkpointer)
         config = {"configurable": {"thread_id": case_id}}
 
@@ -86,14 +86,14 @@ def main() -> None:
             "case_type": "candidate_selection",
             "payload": payload,
         }
-        result = graph.invoke(initial_state, config=config)
+        result = graph.invoke(initial_state, config=config) # type: ignore
 
         if "__interrupt__" in result:
             interrupt_payload = result["__interrupt__"][0].value
             print("Paused for human review:", interrupt_payload)
 
             simulated_human_decision = {"outcome": "fit", "reviewer": "demo_reviewer"}
-            result = graph.invoke(Command(resume=simulated_human_decision), config=config)
+            result = graph.invoke(Command(resume=simulated_human_decision), config=config) # type: ignore
 
         print("Final result:", result)
 

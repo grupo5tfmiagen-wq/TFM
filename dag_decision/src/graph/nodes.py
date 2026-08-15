@@ -33,12 +33,28 @@ La forma esperada es:
         },
     }
 
-No se ha portado el bucle generico de cola de nodos (`carga_del_caso`,
-`dag_engine_selecciona_nodo`, `quedan_nodos`) ni el nodo de transformacion de
-score ponderado del prototipo: `build.py` implementa el Modulo 1 (DAG
-Engine) como un pipeline fijo de 5 nodos con dos bifurcaciones, no como una
-cola generica de nodos por caso, asi que esa parte de DAGEngine.py no aplica
-a esta version productiva.
+Instrumentacion de LangSmith (trazabilidad):
+`@traceable` ya captura automaticamente, por nodo, la entrada (argumentos),
+la salida (valor devuelto) y el tiempo de ejecucion en cuanto
+`LANGSMITH_TRACING=true` este en el `.env`. A eso se le anade, via
+`_tag_current_run` (ver mas abajo), lo que LangSmith no da gratis:
+
+- Tags/metadata por caso (`case_id`, `case_type`) en cada nodo, para poder
+  filtrar y agrupar trazas por caso en la UI de LangSmith.
+- Tags de resultado (`rule_passed`, `requires_review`, `outcome`,
+  `escalated`) en el nodo que los produce, para poder ver tasas (agrupando
+  por tag en LangSmith) sin montar un dashboard aparte.
+- Tokens consumidos y coste estimado de cada llamada LLM (`llm_decision`),
+  ya que `with_structured_output` sin `include_raw=True` descarta esa
+  metadata.
+- Tiempo total del caso end-to-end y tiempo de espera de revision humana,
+  calculados en `final_decision_node` a partir de `Case.created_at` y de
+  `HumanEscalation.created_at`/`resolved_at` (esto no lo captura LangSmith
+  solo con `@traceable`, porque el `interrupt()` puede dejar el caso pausado
+  dias enteros entre dos invocaciones distintas del grafo).
+
+`_tag_current_run` nunca debe poder tumbar el pipeline real: cualquier fallo
+al anotar el run de LangSmith se ignora en silencio.
 """
 from __future__ import annotations
 
@@ -49,7 +65,7 @@ from datetime import date, datetime, timezone
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langgraph.types import interrupt
-from langsmith import traceable
+from langsmith import get_current_run_tree, traceable
 from pydantic import BaseModel, Field
 
 from ..db.base import SessionLocal
@@ -77,6 +93,52 @@ class CandidateAssessment(BaseModel):
 
 def _llm() -> ChatOpenAI:
     return ChatOpenAI(model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
+
+
+def _tag_current_run(*, tags: list[str] | None = None, metadata: dict | None = None) -> None:
+    """Anade tags/metadata al run activo de LangSmith, si hay uno.
+
+    Se apoya en `get_current_run_tree()`, que solo devuelve algo dentro de
+    una funcion decorada con `@traceable` y con el tracing habilitado; si no
+    hay run activo (tracing desactivado, o se llama fuera de un nodo
+    trazado) no hace nada. Cualquier fallo se ignora en silencio: anotar la
+    traza es una mejora de observabilidad, nunca debe poder tumbar el
+    pipeline real.
+    """
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree is None:
+            return
+        if tags:
+            existing = list(run_tree.tags or [])
+            run_tree.tags = existing + [t for t in tags if t not in existing]
+        if metadata:
+            run_tree.extra = run_tree.extra or {}
+            run_tree.extra.setdefault("metadata", {}).update(metadata)
+    except Exception:
+        pass
+
+
+def _case_metadata(state: CaseState) -> dict:
+    """Metadata comun a todos los nodos, para poder filtrar por caso en LangSmith."""
+    return {"case_id": state.get("case_id"), "case_type": state.get("case_type")}
+
+
+# Precio aproximado por millon de tokens (USD). Configurable por variables de
+# entorno porque cambia con el tiempo y con el modelo: los valores por
+# defecto son los de gpt-4o-mini en el momento de escribir esto, hay que
+# revisarlos si cambias de modelo o si OpenAI actualiza precios.
+_INPUT_PRICE_PER_1M_USD = float(os.environ.get("OPENAI_INPUT_PRICE_PER_1M_USD", "0.15"))
+_OUTPUT_PRICE_PER_1M_USD = float(os.environ.get("OPENAI_OUTPUT_PRICE_PER_1M_USD", "0.60"))
+
+
+def _estimate_cost_usd(input_tokens: int | None, output_tokens: int | None) -> float | None:
+    """Coste estimado (USD) de una llamada LLM a partir de sus tokens."""
+    if input_tokens is None or output_tokens is None:
+        return None
+    cost = (input_tokens / 1_000_000) * _INPUT_PRICE_PER_1M_USD
+    cost += (output_tokens / 1_000_000) * _OUTPUT_PRICE_PER_1M_USD
+    return round(cost, 6)
 
 
 def _parse_year_month(value: str | None) -> date | None:
@@ -158,6 +220,16 @@ def rule_evaluator_node(state: CaseState) -> dict:
             "min_years_required": min_years_required,
         }
 
+        _tag_current_run(
+            tags=[f"rule_passed:{passed}"],
+            metadata={
+                **_case_metadata(state),
+                "missing_skills": missing_skills,
+                "years_experience": years_experience,
+                "min_years_required": min_years_required,
+            },
+        )
+
     return {
         "rule_result": {
             "passed": passed,
@@ -176,6 +248,10 @@ def llm_decision_node(state: CaseState) -> dict:
     misma senal que usaba el cociente ad-hoc de `llm_node` en DAGEngine.py —
     para que el LLM real valore la afinidad del candidato con ellas como
     parte de su juicio estructurado, en vez de calcularla con una formula.
+
+    Tambien captura tokens consumidos y coste estimado de la llamada (ver
+    `_estimate_cost_usd`), que quedan tanto en `node_execution.output_data`
+    como en la metadata del run de LangSmith.
     """
     payload = state["payload"] # type: ignore
     desired_skills = sorted(
@@ -190,8 +266,18 @@ def llm_decision_node(state: CaseState) -> dict:
         f"Habilidades deseables del puesto: {desired_skills}"
     )
     with traced_node(state["case_id"], "llm_decision", {"prompt": prompt}) as (session, node_execution): # type: ignore
-        structured_llm = _llm().with_structured_output(CandidateAssessment)
-        assessment: CandidateAssessment = structured_llm.invoke(prompt) # type: ignore
+        # `include_raw=True` conserva el AIMessage original (con
+        # `usage_metadata`) ademas del objeto parseado; sin esto,
+        # `with_structured_output` descarta el conteo de tokens.
+        structured_llm = _llm().with_structured_output(CandidateAssessment, include_raw=True)
+        raw_result = structured_llm.invoke(prompt)
+        assessment: CandidateAssessment = raw_result["parsed"]
+
+        usage = getattr(raw_result.get("raw"), "usage_metadata", None) or {}
+        input_tokens = usage.get("input_tokens")
+        output_tokens = usage.get("output_tokens")
+        total_tokens = usage.get("total_tokens")
+        estimated_cost_usd = _estimate_cost_usd(input_tokens, output_tokens)
 
         llm_decision = LlmDecision(
             node_execution_id=node_execution.id,
@@ -205,7 +291,23 @@ def llm_decision_node(state: CaseState) -> dict:
 
         result = assessment.model_dump()
         result["llm_decision_id"] = str(llm_decision.id)
+        result["input_tokens"] = input_tokens
+        result["output_tokens"] = output_tokens
+        result["total_tokens"] = total_tokens
+        result["estimated_cost_usd"] = estimated_cost_usd
         node_execution.output_data = result
+
+        _tag_current_run(
+            tags=[f"fit_label:{assessment.fit_label}"],
+            metadata={
+                **_case_metadata(state),
+                "confidence": assessment.confidence,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+                "estimated_cost_usd": estimated_cost_usd,
+            },
+        )
 
     return {"llm_decision": result}
 
@@ -240,6 +342,11 @@ def validation_node(state: CaseState) -> dict:
             )
         )
         node_execution.output_data = {"is_valid": is_valid, "requires_review": requires_review}
+
+        _tag_current_run(
+            tags=[f"requires_review:{requires_review}"],
+            metadata={**_case_metadata(state), "is_valid": is_valid, "confidence": confidence},
+        )
 
     return {"requires_human": requires_review}
 
@@ -300,7 +407,17 @@ def human_escalation_node(state: CaseState) -> dict:
 
 @traceable(name="final_decision")
 def final_decision_node(state: CaseState) -> dict:
-    """Modulo 6: consolida todo en el resultado oficial del caso."""
+    """Modulo 6: consolida todo en el resultado oficial del caso.
+
+    Ademas de consolidar el resultado, calcula dos metricas que
+    `@traceable` no puede capturar solo (porque el caso puede quedar
+    pausado por `interrupt()` dias enteros entre dos invocaciones distintas
+    del grafo, asi que no son "tiempo de ejecucion de un nodo"):
+
+    - `total_case_seconds`: desde `Case.created_at` hasta ahora.
+    - `human_review_seconds`: desde que se creo la `HumanEscalation` hasta
+      que se resolvio (`None` si el caso no paso por revision humana).
+    """
     case_id = state["case_id"] # type: ignore
     consolidated = {
         "rule_result": state.get("rule_result"),
@@ -318,6 +435,25 @@ def final_decision_node(state: CaseState) -> dict:
         else:
             outcome = (state.get("llm_decision") or {}).get("fit_label", "unclear")
 
+        case = session.get(Case, uuid.UUID(case_id))
+
+        human_review_seconds = None
+        if human_feedback:
+            last_escalation = (
+                session.query(HumanEscalation)
+                .filter_by(case_id=case_id, status="resolved")
+                .order_by(HumanEscalation.resolved_at.desc())
+                .first()
+            )
+            if last_escalation and last_escalation.resolved_at and last_escalation.created_at:
+                human_review_seconds = (
+                    last_escalation.resolved_at - last_escalation.created_at
+                ).total_seconds()
+
+        total_case_seconds = None
+        if case is not None and getattr(case, "created_at", None):
+            total_case_seconds = (datetime.now(timezone.utc) - case.created_at).total_seconds()
+
         session.add(
             FinalDecision(
                 case_id=case_id,
@@ -327,11 +463,23 @@ def final_decision_node(state: CaseState) -> dict:
             )
         )
 
-        case = session.get(Case, uuid.UUID(case_id))
         if case is not None:
             case.status = "closed"
             case.current_node_key = "final_decision"
 
-        node_execution.output_data = {"outcome": outcome}
+        node_execution.output_data = {
+            "outcome": outcome,
+            "total_case_seconds": total_case_seconds,
+            "human_review_seconds": human_review_seconds,
+        }
+
+        _tag_current_run(
+            tags=[f"outcome:{outcome}", f"escalated:{bool(human_feedback)}"],
+            metadata={
+                **_case_metadata(state),
+                "total_case_seconds": total_case_seconds,
+                "human_review_seconds": human_review_seconds,
+            },
+        )
 
     return {"outcome": outcome}

@@ -32,6 +32,34 @@ from src.graph.build import build_graph  # noqa: E402
 
 DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data"
 
+def _load_json(path: Path) -> dict:
+    """Carga un fichero JSON con un mensaje de error mas util si falla.
+
+    Usa `utf-8-sig` en vez de `utf-8` a proposito: en Windows es habitual
+    guardar ficheros como "UTF-8 with BOM" (p.ej. desde el Bloc de notas o
+    al copiar/pegar desde algunos editores), y ese BOM al inicio del fichero
+    rompe el parseo de JSON con errores que no apuntan a la causa real
+    (tipicamente "Expecting property name..." unas lineas mas abajo de
+    donde esta el problema real). `utf-8-sig` lo descarta automaticamente si
+    esta presente, y no afecta en nada si no lo esta.
+
+    Si el JSON sigue sin ser valido, relanza el error con el trozo de texto
+    exacto alrededor del caracter que fallo, para no tener que ir a ciegas.
+    """
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            return json.load(f)
+    except json.JSONDecodeError as exc:
+        raw = path.read_text(encoding="utf-8-sig")
+        start = max(exc.pos - 40, 0)
+        end = min(exc.pos + 40, len(raw))
+        snippet = raw[start:end]
+        raise ValueError(
+            f"{path} no es JSON valido: {exc.msg} "
+            f"(linea {exc.lineno}, columna {exc.colno}, caracter {exc.pos}).\n"
+            f"Contenido alrededor del error:\n...{snippet}..."
+        ) from exc
+
 
 def load_case_payload(case_file: Path, job_profile_file: Path) -> dict:
     """Carga `case.json` + `job_profile.json` y arma el `payload` del caso.
@@ -43,10 +71,8 @@ def load_case_payload(case_file: Path, job_profile_file: Path) -> dict:
     cargado aparte, que es lo que consumen `rule_evaluator_node` y
     `llm_decision_node`.
     """
-    with open(case_file, encoding="utf-8") as f:
-        case = json.load(f)
-    with open(job_profile_file, encoding="utf-8") as f:
-        job_profile = json.load(f)
+    case = _load_json(case_file)
+    job_profile = _load_json(job_profile_file)
 
     if case["job_id"] != job_profile["job_id"]:
         raise ValueError(

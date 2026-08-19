@@ -86,7 +86,7 @@ from .tracing import traced_node
 
 load_dotenv()
 
-CONFIDENCE_THRESHOLD = 0.7
+CONFIDENCE_THRESHOLD = 0.8
 
 
 class CandidateAssessment(BaseModel):

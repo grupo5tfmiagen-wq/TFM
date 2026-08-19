@@ -1,0 +1,63 @@
+{
+  "id": "case-2026-0002",
+  "created_at": "2026-07-30T10:15:00Z",
+  "job_id": "job-backend-senior-2026",
+
+  "candidate": {
+    "id": "cand-002",
+    "name": "Full Name 2",
+    "cv": {
+      "original_format": "pdf",
+      "language": "en",
+      "extracted_text": "Backend developer with experience in Python and PostgreSQL in enterprise management environments, no exposure to scientific instrumentation or large-scale container technologies.",
+      "experience": [
+        {
+          "company": "Company C",
+          "role": "Backend Developer",
+          "start_date": "2018-03",
+          "end_date": "present",
+          "description": "Development of internal APIs in Python/PostgreSQL for enterprise management."
+        }
+      ],
+      "education": [
+        { "degree": "BSc in Computer Engineering", "institution": "Example University", "end_year": 2017 }
+      ],
+      "technical_skills": ["Python", "PostgreSQL", "Docker"],
+      "languages": [{ "language": "english", "level": "B2" }],
+      "certifications": []
+    }
+  },
+
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "rule",
+      "payload": {
+        "rule": "minimum_requirements_filter",
+        "description": "Discards the candidate if mandatory job requirements are not met"
+      }
+    },
+    {
+      "id": "n2",
+      "type": "llm",
+      "payload": {
+        "prompt_template": "evaluate_relevant_experience",
+        "model": "claude-sonnet-4-6",
+        "description": "Analyzes the CV text against the desired requirements"
+      }
+    },
+    {
+      "id": "n3",
+      "type": "transformation",
+      "payload": {
+        "action": "compute_weighted_score",
+        "inputs": ["n1", "n2"]
+      }
+    }
+  ],
+
+  "metadata": {
+    "source": "job_portal_xyz",
+    "assigned_recruiter": "..."
+  }
+}

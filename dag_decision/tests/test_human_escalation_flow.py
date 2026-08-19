@@ -6,6 +6,7 @@ LLM simulado, de modo que el mecanismo autentico de `interrupt()` /
 OpenAI. La BD de negocio se sustituye por el `FakeSession` de `conftest.py`.
 """
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
@@ -20,11 +21,19 @@ from src.graph.nodes import CandidateAssessment
 
 
 class _FakeStructuredLLM:
+    """Imita la salida de `with_structured_output(..., include_raw=True)`:
+    un dict con la valoracion parseada y el mensaje crudo con usage_metadata."""
+
     def __init__(self, assessment):
-        self._assessment = assessment
+        self._result = {
+            "parsed": assessment,
+            "raw": SimpleNamespace(
+                usage_metadata={"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}
+            ),
+        }
 
     def invoke(self, _prompt):
-        return self._assessment
+        return self._result
 
 
 class _FakeLLM:
@@ -34,7 +43,7 @@ class _FakeLLM:
         self._assessment = assessment
         self.calls = 0
 
-    def with_structured_output(self, _schema):
+    def with_structured_output(self, _schema, include_raw=False):
         self.calls += 1
         return _FakeStructuredLLM(self._assessment)
 
@@ -46,7 +55,22 @@ def _initial_state(payload: dict) -> tuple[str, dict, dict]:
     return case_id, config, state
 
 
-GOOD_PAYLOAD = {"years_experience": 5, "has_cv": True, "has_id_document": True}
+# Payload con la forma real de `case.json` + `job_profile.json` (ver
+# `scripts/run_case.py`): el candidato supera los requisitos obligatorios.
+GOOD_PAYLOAD = {
+    "candidate": {
+        "cv": {
+            "technical_skills": ["Python", "PostgreSQL"],
+            "experience": [{"start_date": "2018-01", "end_date": "present"}],
+        }
+    },
+    "job_profile": {
+        "mandatory_requirements": {
+            "technical_skills": ["Python"],
+            "min_years_experience": 3,
+        }
+    },
+}
 
 
 def test_confianza_baja_pausa_en_escalacion_y_reanuda_hasta_decision_humana(
@@ -117,7 +141,22 @@ def test_reglas_no_superadas_rechazan_sin_llm_ni_escalacion(patch_session, monke
     fake_llm = _FakeLLM(CandidateAssessment(fit_label="fit", confidence=0.9, justification="ok"))
     monkeypatch.setattr(nodes_module, "_llm", lambda: fake_llm)
     graph = build_graph(InMemorySaver())
-    payload = {"years_experience": 0, "has_cv": True, "has_id_document": True}
+    # Al candidato le falta la habilidad obligatoria "Python": las reglas lo
+    # descartan antes de llegar al LLM.
+    payload = {
+        "candidate": {
+            "cv": {
+                "technical_skills": ["Excel"],
+                "experience": [{"start_date": "2020-01", "end_date": "present"}],
+            }
+        },
+        "job_profile": {
+            "mandatory_requirements": {
+                "technical_skills": ["Python"],
+                "min_years_experience": 3,
+            }
+        },
+    }
     case_id, config, state = _initial_state(payload)
 
     result = graph.invoke(state, config=config)

@@ -1,0 +1,13 @@
+{
+  "job_id": "job-backend-senior-2026",
+  "title": "Senior Backend Engineer",
+
+  "mandatory_requirements": {
+    "technical_skills": ["Python", "PostgreSQL"],
+    "min_years_experience": 4
+  },
+
+  "desired_requirements": {
+    "technical_skills": ["Docker", "Kubernetes", "C++"]
+  }
+}

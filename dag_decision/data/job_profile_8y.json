@@ -1,0 +1,36 @@
+{
+  "job_id": "job-backend-staff-2026",
+  "title": "Staff Backend Engineer",
+  "department": "Platform",
+  "description": "Design and implementation of backend services for the internal platform, with technical leadership across the team.",
+
+  "mandatory_requirements": {
+    "min_years_experience": 8,
+    "min_education": "Degree in Computer Science or equivalent",
+    "technical_skills": ["Python", "PostgreSQL", "Docker"],
+    "languages": [{ "language": "english", "min_level": "B2" }]
+  },
+
+  "desired_requirements": {
+    "technical_skills": ["Kubernetes", "LangGraph", "C++"],
+    "industry_experience": ["astrophysics", "scientific instrumentation"],
+    "certifications": []
+  },
+
+  "soft_skills": ["teamwork", "communication", "autonomy", "mentoring"],
+
+  "scoring_criteria": {
+    "weight_experience": 0.3,
+    "weight_technical_skills": 0.4,
+    "weight_education": 0.1,
+    "weight_soft_skills": 0.2,
+    "auto_approval_threshold": 0.75,
+    "human_review_threshold": 0.5
+  },
+
+  "conditions": {
+    "location": "La Laguna, Tenerife",
+    "work_mode": "hybrid",
+    "salary_range": "Negotiable"
+  }
+}

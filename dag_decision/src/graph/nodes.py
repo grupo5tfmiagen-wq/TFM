@@ -33,8 +33,14 @@ from ..db.models.case import Case
 from ..db.models.final_decision import FinalDecision
 from ..db.models.human_escalation import HumanEscalation
 from ..db.models.llm_decision import LlmDecision
+from ..db.models.node_execution import CaseNodeExecution
 from ..db.models.rule_evaluation import RuleEvaluation
 from ..db.models.validation import Validation
+from ..escalation.service import (
+    create_escalation,
+    get_pending_escalation,
+    resolve_escalation,
+)
 from .state import CaseState
 from .tracing import traced_node
 
@@ -148,45 +154,71 @@ def human_escalation_node(state: CaseState) -> dict:
     trazado a nivel de grafo de LangGraph. El acceso a BD se divide en dos
     sesiones de corta duracion, antes y despues de `interrupt()`, para no
     mantener una conexion abierta mientras el caso esta pausado.
+
+    La logica de la cola de revision vive en `src/escalation/service.py`.
+    La primera sesion registra la escalacion (solo una vez: al reanudar, la
+    escalacion pendiente ya existe y se reutiliza, por lo que el nodo es
+    idempotente) y deja una fila `CaseNodeExecution` en estado "waiting"
+    enlazada desde `HumanEscalation.node_execution_id`. La segunda sesion,
+    tras la reanudacion, resuelve la escalacion y cierra la auditoria.
     """
     case_id = state["case_id"]
 
     with SessionLocal() as session:
-        escalation = (
-            session.query(HumanEscalation)
-            .filter_by(case_id=case_id, status="pending")
-            .order_by(HumanEscalation.created_at.desc())
-            .first()
-        )
+        escalation = get_pending_escalation(session, case_id)
         if escalation is None:
-            escalation = HumanEscalation(
+            node_execution = CaseNodeExecution(
+                case_id=uuid.UUID(case_id),
+                node_key="human_escalation",
+                input_data={
+                    "llm_decision": state.get("llm_decision"),
+                    "validation": state.get("validation"),
+                },
+                status="waiting",
+                started_at=datetime.now(timezone.utc),
+            )
+            session.add(node_execution)
+            session.flush()
+            escalation = create_escalation(
+                session,
                 case_id=case_id,
                 reason=f"Low confidence or invalid LLM decision: {state.get('llm_decision')}",
-                status="pending",
+                node_execution_id=node_execution.id,
             )
-            session.add(escalation)
+            case = session.get(Case, uuid.UUID(case_id))
+            if case is not None:
+                case.status = "waiting_human"
+                case.current_node_key = "human_escalation"
             session.commit()
+        escalation_id = str(escalation.id)
 
     decision = interrupt(
         {
             "case_id": case_id,
+            "escalation_id": escalation_id,
             "question": "Revisa el caso y decide el resultado ('fit' o 'not_fit').",
             "llm_decision": state.get("llm_decision"),
         }
     )
 
     with SessionLocal() as session:
-        escalation = (
-            session.query(HumanEscalation)
-            .filter_by(case_id=case_id, status="pending")
-            .order_by(HumanEscalation.created_at.desc())
-            .first()
-        )
+        escalation = get_pending_escalation(session, case_id)
         if escalation is not None:
-            escalation.status = "resolved"
-            escalation.resolution = decision.get("outcome")
-            escalation.assigned_to = decision.get("reviewer")
-            escalation.resolved_at = datetime.now(timezone.utc)
+            resolve_escalation(
+                session,
+                escalation.id,
+                outcome=decision.get("outcome"),
+                reviewer=decision.get("reviewer"),
+            )
+            if escalation.node_execution_id is not None:
+                node_execution = session.get(CaseNodeExecution, escalation.node_execution_id)
+                if node_execution is not None:
+                    node_execution.status = "completed"
+                    node_execution.output_data = {"human_feedback": decision}
+                    node_execution.finished_at = datetime.now(timezone.utc)
+            case = session.get(Case, uuid.UUID(case_id))
+            if case is not None:
+                case.status = "running"
             session.commit()
 
     return {"human_feedback": decision}

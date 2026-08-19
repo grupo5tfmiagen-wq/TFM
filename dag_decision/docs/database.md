@@ -4,10 +4,18 @@ Este proyecto usa Postgres en local (vía Docker Compose) para persistir dos
 cosas distintas:
 
 1. **Esquema de negocio** (tablas propias, gestionadas por Alembic): `cases`,
-   `dag_definitions`, `case_node_executions`, `rule_evaluations`,
+   `cv_documents`, `job_postings`, `case_node_executions`, `rule_evaluations`,
    `llm_decisions`, `validations`, `human_escalations`, `final_decisions`.
    Es la trazabilidad legible y consultable para auditoría y KPIs (accuracy,
    tasa de escalado humano, tiempo de resolución, etc.).
+   
+   - **`cv_documents`**: CVs convertidos de PDF a JSON estructurado, con
+     experiencia, formación, habilidades, idiomas y certificaciones.
+   - **`job_postings`**: Ofertas laborales con requisitos, habilidades
+     requeridas y condiciones. Relacionadas con casos mediante FK.
+   - **`cases`**: Casos de evaluación que relacionan un CV con una oferta
+     laboral mediante `cv_document_id` y `job_posting_id`.
+
 2. **Checkpoints de LangGraph** (tablas `checkpoints`, `checkpoint_writes`,
    `checkpoint_blobs`, `checkpoint_migrations`): estado técnico interno del
    grafo por caso/hilo, gestionado automáticamente por
@@ -82,8 +90,28 @@ instalado, el script te avisa y abre la página de descarga.
    python scripts/check_db_connection.py
    ```
 
-   Deberías ver la conexión en `OK` y el listado de las 8 tablas de negocio
+   Deberías ver la conexión en `OK` y el listado de las 10 tablas de negocio
    más las tablas de checkpoint de LangGraph.
+
+## Cargar datos de ejemplo
+
+Para crear una oferta laboral de ejemplo:
+
+```
+python scripts/load_job_posting.py
+```
+
+Para convertir un CV de PDF a JSON y guardarlo en la base de datos:
+
+```
+cd ../script_pdf_json
+python cv_to_json_openai.py cv_ejemplo.pdf --puesto-id puesto-backend-senior-2026 --save-db
+```
+
+Esto creará:
+- Un registro en `cv_documents` con el CV estructurado
+- Un registro en `job_postings` si no existe (básico, editar después)
+- Un registro en `cases` relacionando el CV con la oferta
 
 ## Generar nuevas migraciones
 

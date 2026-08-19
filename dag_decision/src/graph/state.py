@@ -18,6 +18,10 @@ class CaseState(TypedDict, total=False):
     case_type: str
     payload: dict[str, Any]
 
+    # Referencias a CV y oferta laboral (opcionales para compatibilidad)
+    cv_document_id: str | None
+    job_posting_id: str | None
+
     rule_result: dict[str, Any] | None
     llm_decision: dict[str, Any] | None
     validation: dict[str, Any] | None

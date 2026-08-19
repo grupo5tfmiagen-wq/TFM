@@ -203,6 +203,7 @@ def main() -> None:
     parser.add_argument("pdf", type=Path, help="Ruta al CV en PDF")
     parser.add_argument("--puesto-id", required=True, help="puesto_id del perfil de puesto contra el que se evaluará")
     parser.add_argument("--out", type=Path, default=None, help="Ruta de salida del JSON (por defecto: <nombre_pdf>.json)")
+    parser.add_argument("--save-db", action="store_true", help="Guardar el CV y el caso en la base de datos")
     args = parser.parse_args()
 
     texto_cv = extraer_texto_pdf(args.pdf)
@@ -220,6 +221,19 @@ def main() -> None:
         json.dump(caso, f, ensure_ascii=False, indent=2)
 
     print(f"CV convertido y guardado en: {ruta_salida}")
+    
+    # Guardar en base de datos si se solicita
+    if args.save_db:
+        try:
+            from db_helper import guardar_caso_completo
+            cv_id, oferta_id, caso_id = guardar_caso_completo(caso)
+            print(f"✓ Guardado en BBDD:")
+            print(f"  - CV Document ID: {cv_id}")
+            print(f"  - Job Posting ID: {oferta_id}")
+            print(f"  - Case ID: {caso_id}")
+        except Exception as e:
+            print(f"⚠ Error al guardar en BBDD: {e}")
+            print("  El JSON se guardó correctamente, pero no se pudo guardar en la base de datos.")
 
 
 if __name__ == "__main__":

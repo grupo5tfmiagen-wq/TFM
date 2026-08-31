@@ -1,4 +1,3 @@
-
 # Glosario de Términos Académicos: Motor de Decisión Híbrido
 
 
@@ -129,6 +128,57 @@
 
 [3] MDPI. (2025). Hybrid AI and LLM-Enabled Agent-Based Real-Time Decision Support Architecture for Industrial Batch Processes. MDPI Processes, 7(2), 51. https://doi.org/10.3389/fpos.2025.1611563
 
+[4] Brandes, U., & Erlebach, T. (Eds.). (2005). Network Analysis: Methodological Foundations (Vol. 3418). Springer Science & Business Media.
+
+[5] Brown, T., et al. (2020). Language Models are Few-Shot Learners. Advances in Neural Information Processing Systems, 33, 1877-1901.
+
+* **Definición**: Marco ético, técnico y operativo estructurado para garantizar que los sistemas basados en inteligencia artificial operen de manera segura, transparente, explicable y bajo estricto control operativo [1, 3].
+* **Aplicación en el sistema**: Consiste en restringir la autonomía del LLM, limitando su rol a la clasificación o interpretación de datos sin permitirle tomar decisiones críticas o desviar flujos del DAG de manera autónoma o no supervisada [3].
+
+---
+
+## 5. Integración y Escalado Humano
+
+### Human-in-the-Loop (HITL)
+
+* **Definición**: Enfoque de diseño de sistemas donde el juicio, la supervisión y la intervención humana están integrados de manera estratégica en el ciclo de ejecución de un proceso automatizado o algoritmo de IA [1].
+* **Aplicación en el sistema**: Paradigma bajo el cual se concibe todo el proyecto: la automatización asiste en las tareas repetitivas de bajo riesgo, mientras que el juicio humano se reserva para resolver la incertidumbre o aprobar los casos críticos [1, 3].
+
+### Capa de Escalado Humano (Human Escalation Layer)
+
+* **Definición**: Interfaz y componente lógico encargado de pausar el flujo automatizado de un caso y transferir su control a un operador humano debido a fallos de validación, baja confianza o riesgos de negocio [1, 3].
+* **Aplicación en el sistema**: Se activa de forma automática ante la detección de anomalías o clasificaciones dudosas por parte del LLM, permitiendo a un analista revisar la trazabilidad del caso y emitir una resolución manual informada [3].
+
+### Decisión Final (Final Decision)
+
+* **Definición**: Estado de salida oficial y concluyente del flujo del DAG en el que se consolida la resolución del expediente bajo evaluación [3].
+* **Aplicación en el sistema**: Cierra el ciclo del caso emitiendo resoluciones formales (como aprobación, rechazo o solicitud de subsanación) tras la confluencia de la lógica de reglas, el análisis de los LLM y las decisiones del revisor humano [3].
+
+---
+
+## 6. Evaluación y Métricas de Rendimiento (KPIs)
+
+### Tasa de Escalado Humano (Human Escalation Rate)
+
+* **Definición**: Métrica cuantitativa que mide la proporción de casos procesados por el sistema que requieren intervención humana frente al total de casos entrantes [1, 3].
+* **Aplicación en el sistema**: Permite evaluar el nivel de eficiencia operativa y el grado de automatización segura alcanzado por el motor híbrido [3].
+
+### Precisión de la Decisión (Decision Accuracy)
+
+* **Definición**: Indicador de rendimiento que evalúa la coincidencia entre las resoluciones automáticas adoptadas por el motor y una verdad de referencia o patrón de oro (*ground truth*) definido por expertos [3].
+* **Aplicación en el sistema**: Esencial en la validación empírica del TFM para demostrar la fiabilidad y robustez de la arquitectura híbrida frente a un enfoque puramente algorítmico o manual [3].
+
+---
+
+## Bibliografía
+
+[1] Mosqueira-Rey, E., Alonso-Ríos, D., Porto-Pazos, A. B., & Vázquez-Naya, J. M. (2023). Humans in the loop: Exploring the challenges of human participation in automated decision-making systems. Frontiers in Political Science, 5, 1611563. https://doi.org/10.3389/fpos.2025.1611563
+
+[2] Fan, J., et al. (2023). Empirical Study for Structured Output Control in LLMs for Software Engineering. arXiv preprint arXiv:2606.09395v1. https://arxiv.org/abs/2606.09395
+
+[3] MDPI. (2025). Hybrid AI and LLM-Enabled Agent-Based Real-Time Decision Support Architecture for Industrial Batch Processes. MDPI Processes, 7(2), 51. https://doi.org/10.3389/fpos.2025.1611563
+
 [4] Brandes, U., & Erlebach, T. (Eds.). (2005). Network Analysis: Methodological Foundations (Vol. 3418). Springer Science & Business Media. 
 
+>>>>>>> origin/main
 [5] Brown, T., et al. (2020). Language Models are Few-Shot Learners. Advances in Neural Information Processing Systems, 33, 1877-1901.

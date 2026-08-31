@@ -1,0 +1,90 @@
+{
+  "id": "case-370c862b",
+  "created_at": "2026-07-30T11:56:06Z",
+  "job_id": "job-backend-senior-2026",
+  "candidate": {
+    "id": "cand-8beb94b2",
+    "name": "Marta Suárez Delgado",
+    "cv": {
+      "original_format": "pdf",
+      "language": "en",
+      "extracted_text": "Marta Suárez Delgado\nSan Cristóbal de La Laguna, Tenerife · marta.suarez.delgado@example-email.com · +34 600 000 000\nProfessional profile\nSoftware engineer with over 6 years of experience in backend development, specialized in\nPython and distributed systems. Recent experience in control software for scientific\ninstrumentation. English level B2.\nProfessional experience\nSoftware Engineer — Atlantic Technical Observatory\nJuly 2023 – Present\nDevelopment of control software for scientific instrumentation in C++. Integration with real-time\ndata acquisition systems and collaboration with the operations team.\nBackend Engineer — Digital Solutions Company SL\nJanuary 2020 – June 2023\nDevelopment of REST APIs and services in Python and PostgreSQL for an internal management\nplatform. Containerization of services with Docker and continuous deployment.\nEducation\nBSc in Computer Engineering\nUniversity of La Laguna — 2019\nTechnical skills\nPython, C++, Docker, PostgreSQL, Git, Linux\nLanguages\nSpanish (native) · English (B2)",
+      "experience": [
+        {
+          "company": "Atlantic Technical Observatory",
+          "role": "Software Engineer",
+          "start_date": "2023-07",
+          "end_date": "present",
+          "description": "Development of control software for scientific instrumentation in C++. Integration with real-time data acquisition systems and collaboration with the operations team."
+        },
+        {
+          "company": "Digital Solutions Company SL",
+          "role": "Backend Engineer",
+          "start_date": "2020-01",
+          "end_date": "2023-06",
+          "description": "Development of REST APIs and services in Python and PostgreSQL for an internal management platform. Containerization of services with Docker and continuous deployment."
+        }
+      ],
+      "education": [
+        {
+          "degree": "BSc in Computer Engineering",
+          "institution": "University of La Laguna",
+          "end_year": 2019
+        }
+      ],
+      "technical_skills": [
+        "Python",
+        "C++",
+        "Docker",
+        "PostgreSQL",
+        "Git",
+        "Linux"
+      ],
+      "languages": [
+        {
+          "language": "Spanish",
+          "level": "native"
+        },
+        {
+          "language": "English",
+          "level": "B2"
+        }
+      ],
+      "certifications": []
+    }
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "rule",
+      "payload": {
+        "rule": "minimum_requirements_filter",
+        "description": "Discards the candidate if mandatory job requirements are not met"
+      }
+    },
+    {
+      "id": "n2",
+      "type": "llm",
+      "payload": {
+        "prompt_template": "evaluate_relevant_experience",
+        "model": "gpt-4.1-mini6",
+        "description": "Analyzes the CV text against the desired requirements"
+      }
+    },
+    {
+      "id": "n3",
+      "type": "transformation",
+      "payload": {
+        "action": "compute_weighted_score",
+        "inputs": [
+          "n1",
+          "n2"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "source": "pdf:cv_example.pdf",
+    "assigned_recruiter": "..."
+  }
+}

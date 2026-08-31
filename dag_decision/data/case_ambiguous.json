@@ -1,0 +1,40 @@
+{
+  "id": "case-2026-0004",
+  "created_at": "2026-08-19T10:00:00Z",
+  "job_id": "job-backend-senior-2026",
+
+  "candidate": {
+    "id": "cand-004",
+    "name": "Full Name 4",
+    "cv": {
+      "original_format": "pdf",
+      "language": "en",
+      "extracted_text": "Backend developer, 5 years of experience. Self-reported CV claims 'proficient in Kubernetes, C++ and LangGraph', but the recruiter's reference check with the previous manager contradicts this: the manager states the candidate 'never actually deployed anything with Kubernetes, wrote C++ only as a student, and has no real LangGraph experience beyond a tutorial'. Interview notes are similarly mixed: one interviewer rated the candidate 'strong hire', another rated 'weak, inconsistent answers on distributed systems fundamentals'. No experience in scientific/industrial instrumentation. Recruiter's own summary: 'genuinely unclear whether this candidate meets the desired skills or is overselling their CV, recommend a second opinion'.",
+      "experience": [
+        {
+          "company": "Retail Company X",
+          "role": "Backend Developer",
+          "start_date": "2018-06",
+          "end_date": "2021-06",
+          "description": "Internal tools in Python, PostgreSQL and Docker for inventory management."
+        },
+        {
+          "company": "Startup Y",
+          "role": "Generalist Software Engineer",
+          "start_date": "2021-07",
+          "end_date": "present",
+          "description": "Rotated across frontend, backend and light infra tasks; some exposure to Kubernetes via a short course, no hands-on production use."
+        }
+      ],
+      "education": [
+        { "degree": "BSc in Computer Engineering", "institution": "Example University", "end_year": 2018 }
+      ],
+      "technical_skills": ["Python", "PostgreSQL", "Docker"],
+      "languages": [{ "language": "english", "level": "B2" }],
+      "certifications": []
+    }
+  },
+
+  "nodes": [],
+  "metadata": { "source": "demo_ambiguous", "assigned_recruiter": "..." }
+}

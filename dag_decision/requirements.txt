@@ -7,4 +7,8 @@ langgraph-checkpoint-postgres>=2.0
 langsmith>=0.10
 langchain-core>=1.0
 langchain-openai>=1.0
+<<<<<<< Updated upstream
 pytest>=8.0
+=======
+pytest
+>>>>>>> Stashed changes

@@ -8,13 +8,11 @@ Python y Sistemas Distribuidos"** (`scripts/load_job_posting.py`).
 La demo recorre los 6 módulos de la arquitectura y muestra las dos capas de
 persistencia: los checkpoints de LangGraph (pausa/reanudación) y el esquema de
 negocio (trazabilidad auditable en Postgres).
-
 ---
 
 ## 0. Requisitos previos
 
 | Requisito | Comprobación |
-|---|---|
 | Docker Desktop arrancado | `docker ps` responde sin error |
 | Postgres del proyecto levantado | `docker compose up -d` (contenedor `dag_decision_postgres`, puerto **5433**) |
 | Migraciones aplicadas | `python -m alembic upgrade head` (ya hecho si usaste `setup.ps1`) |

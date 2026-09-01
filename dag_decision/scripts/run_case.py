@@ -4,11 +4,11 @@ Uso (desde `dag_decision/`, con el venv activo y `.env` relleno, incluyendo
 un `OPENAI_API_KEY` real y, opcionalmente, `LANGSMITH_API_KEY`):
 
     .venv\\Scripts\\python scripts\\run_case.py
-    .venv\\Scripts\\python scripts\\run_case.py --case-file data\\case.json --job-profile-file data\\job_profile.json
+    .venv\\Scripts\\python scripts\\run_case.py --case-file data\\case_review.json --job-profile-file data\\job_profile.json
 
-Carga el caso desde un fichero JSON con la forma de `scripts/data/case.json`
+Carga el caso desde un fichero JSON con la forma de `data/case.json`
 (candidato + cola de nodos del DAG) y el perfil de puesto correspondiente
-(`scripts/data/job_profile.json`, casado por `job_id`), crea una fila `Case`,
+(`data/job_profile.json`, casado por `job_id`), crea una fila `Case`,
 y ejecuta el grafo hasta que llega a una decision final o se pausa en la
 Human Escalation Layer. Si se pausa, el script pregunta la decision por
 consola (`fit`/`not_fit` + identificador de revisor) y reanuda el grafo con
@@ -118,7 +118,7 @@ def load_case_payload(case_file: Path, job_profile_file: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--case-file", type=Path, default=DEFAULT_DATA_DIR / "case.json")
+    parser.add_argument("--case-file", type=Path, default=DEFAULT_DATA_DIR / "case_review.json")
     parser.add_argument("--job-profile-file", type=Path, default=DEFAULT_DATA_DIR / "job_profile.json")
     parser.add_argument(
         "--resume-case-id",

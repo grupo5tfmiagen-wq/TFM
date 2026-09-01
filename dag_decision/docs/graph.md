@@ -20,8 +20,8 @@ Alembic + checkpointer de LangGraph).
 - `src/graph/build.py` — `build_graph(checkpointer)`: define el DAG (Módulo 1,
   DAG Engine) y el enrutado condicional entre nodos.
 - `scripts/run_case.py` — ejecución de ejemplo: crea un `Case`, invoca el
-  grafo, y si se pausa en Human Escalation, lo reanuda con una decisión
-  humana simulada (`Command(resume=...)`).
+  grafo, y si se pausa en Human Escalation, pide una decisión humana para
+  reanudarlo (`Command(resume=...)`).
 
 ## Cómo se relacionan LangGraph y la BD de negocio
 
@@ -52,16 +52,17 @@ Dos capas de persistencia complementarias, ya documentadas en
      `langchain-openai`) y los nodos decorados con `@traceable` se envían
      automáticamente a LangSmith; no hace falta código adicional.
 
-3. Ejecuta el caso de ejemplo:
+3. Ejecuta un caso CLI con ficheros compatibles:
 
    ```
-   python scripts/run_case.py
+  python scripts/run_case.py --case-file data/case_review.json --job-profile-file data/job_profile.json
    ```
 
    Debería crear un `Case`, ejecutar `rule_evaluator` → `llm_decision` →
    `validation`, y si la confianza del LLM es baja, pausarse en
-   `human_escalation` y reanudarse automáticamente con una decisión
-   simulada, hasta llegar a `final_decision`.
+  `human_escalation` y pedir una decisión por consola, hasta llegar a
+  `final_decision`. Usa `--auto fit` o `--auto not_fit` para una ejecución
+  no interactiva.
 
 4. Revisa la traza en LangSmith (si está configurado) y las filas creadas en
    Postgres (`cases`, `case_node_executions`, `rule_evaluations`,
@@ -87,3 +88,6 @@ Dos capas de persistencia complementarias, ya documentadas en
 - El acceso a BD en `human_escalation_node` se divide en dos sesiones cortas
   (antes y después de `interrupt()`) para no mantener una conexión abierta
   mientras el caso está pausado, potencialmente horas o días.
+- `CONFIDENCE_THRESHOLD` se lee de `.env` (por defecto `0.8`). Para forzar
+  temporalmente el paso por revisión humana en una demo, usa `0.99` y reinicia
+  el proceso que ejecuta el grafo.

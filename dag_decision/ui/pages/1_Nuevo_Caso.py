@@ -19,7 +19,7 @@ with SessionLocal() as session:
 if not cvs or not jobs:
     st.warning(
         "Hacen falta CVs y ofertas en la base de datos. Ejecuta "
-        "`scripts/load_cv_document.py` y `scripts/load_job_posting.py` primero."
+        "`scripts/load_demo_data.py` primero."
     )
     st.stop()
 

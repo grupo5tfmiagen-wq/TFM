@@ -8,6 +8,7 @@ la pagina "Nuevo Caso" de la UI sin pasar por la conversion real de PDF.
 Uso:
     python scripts/load_cv_document.py
 """
+import argparse
 import json
 import os
 import sys
@@ -18,12 +19,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.db.base import SessionLocal
 from src.db.models import CVDocument
 
-CV_EJEMPLO_PATH = Path(__file__).parent.parent.parent / "script_pdf_json" / "cv_ejemplo.json"
+#CV_EJEMPLO_PATH = Path(__file__).parent.parent.parent / "script_pdf_json" / "cv_ejemplo.json"
+CV_EJEMPLO_PATH = Path(__file__).parent.parent.parent / "script_pdf_json" 
 
 
-def cargar_cv_ejemplo() -> None:
+def cargar_cv(json_path: Path) -> None:
     """Inserta el CV de ejemplo si no existe ya un `CVDocument` con su `candidate_id`."""
-    with open(CV_EJEMPLO_PATH, encoding="utf-8-sig") as f:
+    with open(json_path, encoding="utf-8-sig") as f:
         caso_json = json.load(f)
     candidato = caso_json["candidato"]
     cv_data = candidato["cv"]
@@ -62,4 +64,7 @@ def cargar_cv_ejemplo() -> None:
 
 
 if __name__ == "__main__":
-    cargar_cv_ejemplo()
+    parser = argparse.ArgumentParser(description="Inserta el CV de ejemplo si no existe ya un `CVDocument` con su `candidate_id`")
+    parser.add_argument("json", type=Path, help="Ruta al CV en JSON (ej. script_pdf_json/cv_ejemplo.json)", nargs="?", default=CV_EJEMPLO_PATH)
+    args = parser.parse_args()
+    cargar_cv(args.json)

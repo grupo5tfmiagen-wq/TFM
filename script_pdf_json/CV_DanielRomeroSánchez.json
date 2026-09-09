@@ -1,0 +1,94 @@
+{
+  "id": "caso-93244701",
+  "fecha_creacion": "2026-09-09T19:38:23Z",
+  "puesto_id": "puesto-data-engineer-2026",
+  "candidato": {
+    "id": "cand-465a76dc",
+    "nombre": "Daniel Romero Sánchez",
+    "cv": {
+      "formato_original": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Daniel Romero Sánchez\nBarcelona, España · daniel.romero.sanchez@correo-ejemplo.com · +34 622 345 678\nPerfil profesional\nIngeniero de datos con más de 5 años de experiencia en desarrollo de pipelines de procesamiento\nmasivo y plataformas de datos. Especializado en Apache Spark y Python, con experiencia en\norquestación de procesos mediante Apache Airflow y entornos contenerizados. Nivel de inglés B2.\nExperiencia profesional\nData Engineer — Iberia Data Platforms\nEnero 2022 – Actualidad\nDiseño y desarrollo de pipelines de procesamiento de grandes volúmenes de datos utilizando Python y\nApache Spark. Creación y mantenimiento de DAGs en Apache Airflow. Contenerización de aplicaciones\nmediante Docker y gestión del código fuente con Git.\nJunior Data Engineer — Analytics Factory\nJulio 2020 – Diciembre 2021\nDesarrollo de procesos ETL en Python. Preparación y transformación de datos para sistemas de análisis.\nColaboración en la automatización de procesos mediante Airflow y utilización de Git para control de\nversiones.\nFormación académica\nGrado en Ciencia de Datos e Inteligencia Artificial\nUniversitat Politècnica de Catalunya — 2020\nHabilidades técnicas\nPython, Apache Spark, Apache Airflow, Git, Docker, SQL, ETL, Linux, Data Pipelines, Hadoop\nIdiomas\nEspañol (nativo) · Inglés (B2)\n1",
+      "experiencia": [
+        {
+          "empresa": "Iberia Data Platforms",
+          "puesto": "Data Engineer",
+          "fecha_inicio": "2022-01",
+          "fecha_fin": "actualidad",
+          "descripcion": "Diseño y desarrollo de pipelines de procesamiento de grandes volúmenes de datos utilizando Python y Apache Spark. Creación y mantenimiento de DAGs en Apache Airflow. Contenerización de aplicaciones mediante Docker y gestión del código fuente con Git."
+        },
+        {
+          "empresa": "Analytics Factory",
+          "puesto": "Junior Data Engineer",
+          "fecha_inicio": "2020-07",
+          "fecha_fin": "2021-12",
+          "descripcion": "Desarrollo de procesos ETL en Python. Preparación y transformación de datos para sistemas de análisis. Colaboración en la automatización de procesos mediante Airflow y utilización de Git para control de versiones."
+        }
+      ],
+      "formacion": [
+        {
+          "titulo": "Grado en Ciencia de Datos e Inteligencia Artificial",
+          "institucion": "Universitat Politècnica de Catalunya",
+          "anio_fin": 2020
+        }
+      ],
+      "habilidades_tecnicas": [
+        "Python",
+        "Apache Spark",
+        "Apache Airflow",
+        "Git",
+        "Docker",
+        "SQL",
+        "ETL",
+        "Linux",
+        "Data Pipelines",
+        "Hadoop"
+      ],
+      "idiomas": [
+        {
+          "idioma": "Español",
+          "nivel": "nativo"
+        },
+        {
+          "idioma": "Inglés",
+          "nivel": "B2"
+        }
+      ],
+      "certificaciones": []
+    }
+  },
+  "nodos": [
+    {
+      "id": "n1",
+      "tipo": "rule",
+      "payload": {
+        "regla": "filtro_requisitos_minimos",
+        "descripcion": "Descarta si no cumple los requisitos obligatorios del puesto"
+      }
+    },
+    {
+      "id": "n2",
+      "tipo": "llm",
+      "payload": {
+        "prompt_template": "evaluar_experiencia_relevante",
+        "modelo": "gpt-4.1-mini6",
+        "descripcion": "Analiza el texto del CV frente a los requisitos deseables"
+      }
+    },
+    {
+      "id": "n3",
+      "tipo": "transformacion",
+      "payload": {
+        "accion": "calcular_score_ponderado",
+        "entradas": [
+          "n1",
+          "n2"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "origen": "pdf:CV_DanielRomeroSánchez.pdf",
+    "reclutador_asignado": "..."
+  }
+}

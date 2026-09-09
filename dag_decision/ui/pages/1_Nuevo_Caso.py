@@ -8,6 +8,7 @@ import streamlit as st
 
 from src.db.base import SessionLocal
 from src.ui_support import graph_runner, queries
+from src.ui_support.render import render_case_result
 
 st.set_page_config(page_title="Nuevo Caso", page_icon="🆕")
 st.title("Nuevo Caso")
@@ -39,12 +40,14 @@ if case_id:
     st.subheader(f"Caso {case_id}")
 
     result = st.session_state["nuevo_caso_result"]
-    st.json({k: v for k, v in result.items() if k != "__interrupt__"})
+    render_case_result(result)
+
+    with st.expander("Ver JSON crudo"):
+        st.json({k: v for k, v in result.items() if k != "__interrupt__"})
 
     interrupt_payload = st.session_state.get("nuevo_caso_interrupt")
     if interrupt_payload:
         st.warning("El caso esta pausado esperando revision humana.")
-        st.json(interrupt_payload)
 
         with st.form("resolver_escalacion"):
             outcome_choice = st.radio("Decision", ["fit", "not_fit"], horizontal=True)
@@ -60,5 +63,3 @@ if case_id:
                 st.session_state["nuevo_caso_result"] = resumed["result"]
                 st.session_state["nuevo_caso_interrupt"] = None
                 st.rerun()
-    else:
-        st.success(f"Decision final: {result.get('outcome')}")

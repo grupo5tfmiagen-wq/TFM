@@ -376,6 +376,13 @@ def human_escalation_node(state: CaseState) -> dict:
     tras la reanudacion, resuelve la escalacion y cierra la auditoria.
     """
     case_id = state["case_id"] # type: ignore
+    llm_decision = state.get("llm_decision") or {}
+    # Antes aqui se volcaba el dict entero de `llm_decision` como texto
+    # (`f"...{state.get('llm_decision')}"`), lo que dejaba un "reason"
+    # ilegible en la cola de escalaciones. Ahora se guarda solo el texto que
+    # de verdad justifica la revision: la `justification` que ya escribio el
+    # LLM en `llm_decision_node`.
+    reason = llm_decision.get("justification") or "El LLM no proporciono una justificacion."
 
     with SessionLocal() as session:
         escalation = get_pending_escalation(session, case_id)
@@ -395,7 +402,7 @@ def human_escalation_node(state: CaseState) -> dict:
             escalation = create_escalation(
                 session,
                 case_id=case_id,
-                reason=f"Low confidence or invalid LLM decision: {state.get('llm_decision')}",
+                reason=reason,
                 node_execution_id=node_execution.id,
             )
             case = session.get(Case, uuid.UUID(case_id))

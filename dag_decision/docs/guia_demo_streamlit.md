@@ -35,6 +35,30 @@ Set-ExecutionPolicy -Scope Process Bypass
 quiere confirmar que la infraestructura sigue preparada. Si Docker Desktop no
 está listo, espera a que termine de arrancar y vuelve a ejecutar el comando.
 
+### Instalación para un nuevo miembro del equipo
+
+Después de clonar el repositorio, la secuencia completa para disponer de una
+base de datos nueva y los datos de demostración es:
+
+```powershell
+git clone https://github.com/grupo5tfmiagen-wq/TFM.git
+Set-Location TFM\dag_decision
+Set-ExecutionPolicy -Scope Process Bypass
+.\setup.ps1
+```
+
+Cuando `setup.ps1` termine, edita `.env` e introduce una clave válida en
+`OPENAI_API_KEY`. Finalmente carga los datos de la demo y arranca la interfaz:
+
+```powershell
+.venv\Scripts\python scripts\load_demo_data.py
+.venv\Scripts\python -m streamlit run ui\Home.py
+```
+
+La primera ejecución de `setup.ps1` crea `.env` desde `.env.example`. El
+archivo `.env` es local y no se sube a Git, por lo que cada persona debe
+configurar sus propias claves.
+
 ## 3. Configurar las claves
 
 Abre `dag_decision/.env`, que no se versiona, y sustituye al menos esta línea:
@@ -85,6 +109,27 @@ Como comprobación adicional:
 El catálogo aporta cinco CVs y cuatro ofertas. Pueden aparecer más registros
 si se habían cargado ejemplos anteriores; eso no afecta a la interfaz.
 
+### Reiniciar todas las tablas de Docker
+
+Este procedimiento **borra todos los datos locales del proyecto**: CVs,
+ofertas, casos, auditorías y checkpoints de LangGraph. Úsalo para repetir la
+demo desde una base de datos vacía. No ejecuta cambios en otros contenedores
+Docker ni elimina el archivo `.env`.
+
+Detén la aplicación Streamlit si está abierta y ejecuta:
+
+```powershell
+docker compose down -v
+.\setup.ps1
+.venv\Scripts\python scripts\load_demo_data.py
+.venv\Scripts\python scripts\verify_cv_job_tables.py
+```
+
+`docker compose down -v` elimina el contenedor y el volumen de PostgreSQL
+declarados por este proyecto. `setup.ps1` crea un contenedor nuevo, aplica las
+migraciones y recrea las tablas de checkpoint; el cargador vuelve a insertar
+los cinco CVs y las cuatro ofertas del catálogo.
+
 ## 5. Iniciar Streamlit
 
 Con PostgreSQL en marcha, inicia la aplicación:
@@ -103,6 +148,8 @@ La navegación lateral contiene:
   resultado o la pausa de revisión humana.
 - **Cola de Escalaciones**: muestra los casos pausados y permite resolverlos.
 - **Historial de Casos**: muestra cada ejecución y su auditoría por nodo.
+- **Metricas**: presenta KPIs y gráficos de decisiones, escalaciones,
+  confianza media del LLM y rendimiento por oferta.
 
 ## 6. Recorridos sugeridos
 

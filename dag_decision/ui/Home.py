@@ -25,5 +25,7 @@ Selecciona una pagina en la barra lateral:
   humana (equivalente en el navegador a `scripts/review_escalations.py`).
 - **Historial de Casos**: consulta el resultado y la auditoria completa
   (regla, LLM, validacion, escalacion, decision final) de cada caso.
+- **Metricas**: resume los indicadores de volumen, aprobacion, escalaciones y
+  confianza LLM para apoyar las conclusiones de la demostracion.
 """
 )

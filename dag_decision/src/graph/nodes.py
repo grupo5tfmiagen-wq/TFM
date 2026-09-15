@@ -86,7 +86,7 @@ from .tracing import traced_node
 
 load_dotenv()
 
-CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.8"))
+CONFIDENCE_THRESHOLD = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.9"))
 
 
 class CandidateAssessment(BaseModel):
@@ -322,6 +322,14 @@ def llm_decision_node(state: CaseState) -> dict:
 def validation_node(state: CaseState) -> dict:
     """Modulo 4: comprueba la coherencia de la salida del LLM antes de confiar en ella.
 
+    Solo se resuelve sin escalar cuando el caso es "obvio": el LLM dio un
+    veredicto decidido (`fit`/`not_fit`, nunca `unclear`) con una confianza
+    muy alta (`CONFIDENCE_THRESHOLD`, 0.9 por defecto — deliberadamente alto,
+    para que solo pasen automaticamente los casos que cumplen todo o los que
+    no tienen ningun sentido para el puesto). Cualquier otro caso escala a
+    revision humana, con el motivo ya explicado via `justification` (ver
+    `human_escalation_node`).
+
     El detalle completo (is_valid, motivo, requires_review) queda persistido
     en la fila `Validation` de este nodo via `traced_node`; al grafo solo le
     hace falta `requires_human` para decidir la ruta en
@@ -335,7 +343,8 @@ def validation_node(state: CaseState) -> dict:
         confidence = llm_decision.get("confidence", 0.0)
         fit_label = llm_decision.get("fit_label")
         is_valid = fit_label in {"fit", "not_fit", "unclear"}
-        requires_review = (not is_valid) or fit_label == "unclear" or confidence < CONFIDENCE_THRESHOLD
+        is_obvious = fit_label in {"fit", "not_fit"} and confidence >= CONFIDENCE_THRESHOLD
+        requires_review = (not is_valid) or not is_obvious
 
         llm_decision_id = llm_decision.get("llm_decision_id")
         session.add(

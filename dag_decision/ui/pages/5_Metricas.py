@@ -103,3 +103,60 @@ st.dataframe(
     hide_index=True,
     width="stretch",
 )
+
+st.divider()
+st.subheader("Sesgo por institución educativa")
+st.caption(
+    "Tasa de aprobación entre candidatos que cursaron estudios en cada institución "
+    "(candidato.cv.education del caso). Con pocos casos por institución, la tasa "
+    "puede no ser representativa — mira siempre la columna 'Casos' antes de sacar "
+    "conclusiones."
+)
+if metrics["institutions"]:
+    institutions_frame = pd.DataFrame(metrics["institutions"])
+    st.dataframe(
+        institutions_frame[["institucion", "casos", "fit", "tasa_fit"]],
+        column_config={
+            "institucion": "Institución",
+            "casos": "Casos",
+            "fit": "Aprobados",
+            "tasa_fit": st.column_config.NumberColumn("Tasa de aprobación", format="%.1f%%"),
+        },
+        hide_index=True,
+        width="stretch",
+    )
+else:
+    st.info("No hay datos de institución educativa en los casos de este periodo.")
+
+def _render_bias_table(rows: list[dict], group_label: str) -> None:
+    if not rows:
+        st.info(f"No hay casos con dato de {group_label.lower()} registrado en este periodo.")
+        return
+    frame = pd.DataFrame(rows)
+    st.dataframe(
+        frame[["grupo", "casos", "fit", "tasa_fit", "tasa_escalacion", "confianza_media"]],
+        column_config={
+            "grupo": group_label,
+            "casos": "Casos",
+            "fit": "Aprobados",
+            "tasa_fit": st.column_config.NumberColumn("Tasa de aprobación", format="%.1f%%"),
+            "tasa_escalacion": st.column_config.NumberColumn("Tasa de escalación", format="%.1f%%"),
+            "confianza_media": st.column_config.NumberColumn("Confianza media LLM", format="%.1f%%"),
+        },
+        hide_index=True,
+        width="stretch",
+    )
+
+
+st.subheader("Sesgo por sexo")
+st.caption(
+    "El sexo del candidato nunca se envía al modelo (no forma parte del payload que "
+    "evalúan las reglas ni el LLM) — esta tabla cruza el dato, guardado solo para "
+    "auditoría, con el resultado real del caso. Con pocos casos por grupo, la tasa "
+    "puede no ser representativa: mira siempre la columna 'Casos'."
+)
+_render_bias_table(metrics["by_sex"], "Sexo")
+
+st.subheader("Sesgo por década de nacimiento")
+st.caption("Mismo cruce que arriba, agrupado por década de nacimiento del candidato.")
+_render_bias_table(metrics["by_birth_decade"], "Década")

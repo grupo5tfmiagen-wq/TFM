@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,14 @@ class CVDocument(Base):
     # Identificación del candidato
     candidate_id: Mapped[str] = mapped_column(String(150), nullable=False, index=True)
     candidate_name: Mapped[str] = mapped_column(String(300), nullable=False)
+
+    # Datos demograficos para auditoria de sesgos (Metricas). Deliberadamente
+    # NO viajan a `payload_builder.py`/al grafo: el modelo de decision no
+    # debe ver nunca estos campos, para poder demostrar que el resultado no
+    # depende de ellos. Solo se leen desde `queries.get_dashboard_metrics`,
+    # cruzando `Case.cv_document` con el resultado del caso.
+    sexo: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    anio_nacimiento: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     # Metadatos del documento original
     original_filename: Mapped[str | None] = mapped_column(String(500), nullable=True)

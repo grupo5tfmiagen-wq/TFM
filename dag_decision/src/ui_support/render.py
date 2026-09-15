@@ -116,3 +116,95 @@ def truncate(text: str | None, length: int = 80) -> str:
     if len(text) <= length:
         return text
     return text[: length - 1].rstrip() + "…"
+
+
+# ---------------------------------------------------------------------------
+# Diagrama del pipeline (build.py): que camino siguio un caso por el grafo
+# ---------------------------------------------------------------------------
+#
+# Esto es una reconstruccion "a posteriori" a partir del `CaseState` final
+# (`result`), no una animacion en vivo nodo a nodo: `graph_runner.start_case`
+# llama a `graph.invoke(...)`, que es bloqueante y no va emitiendo progreso
+# intermedio. Para una version en vivo (ir iluminando cada nodo segun se
+# ejecuta de verdad) haria falta cambiar esa llamada a `graph.stream(...)`
+# en `graph_runner.py` y leer aqui los eventos segun van llegando — no se
+# ha tocado eso porque no forma parte de lo que se tiene a mano ahora mismo.
+
+_NODE_STYLE = {
+    "pending": ("#e0e0e0", "black", "solid"),   # aun no le toca / no aplica
+    "done": ("#81c784", "black", "solid"),      # ya se ejecuto
+    "waiting": ("#ffb74d", "black", "dashed"),  # pausado aqui ahora mismo
+    "skipped": ("#f5f5f5", "#9e9e9e", "dashed"),  # no se llego por la rama que tomo el caso
+}
+
+
+def compute_node_statuses(result: dict[str, Any], is_paused: bool) -> dict[str, str]:
+    """Deduce, a partir del `CaseState` final de un caso, por que nodos del
+    pipeline paso y cual quedo pendiente o sin visitar."""
+    rule_result = result.get("rule_result")
+    llm_decision = result.get("llm_decision")
+    requires_human = result.get("requires_human")
+    human_feedback = result.get("human_feedback")
+    outcome = result.get("outcome")
+
+    statuses: dict[str, str] = {"rule_evaluator": "done" if rule_result is not None else "pending"}
+
+    if rule_result is not None and not rule_result.get("passed"):
+        # Descartado en las reglas obligatorias: el resto del pipeline no llega a ejecutarse.
+        statuses["llm_decision"] = "skipped"
+        statuses["validation"] = "skipped"
+        statuses["human_escalation"] = "skipped"
+        statuses["final_decision"] = "done" if outcome is not None else "pending"
+        return statuses
+
+    statuses["llm_decision"] = "done" if llm_decision is not None else "pending"
+    # `validation_node` no deja nada propio en el `CaseState` (ver la nota en
+    # state.py sobre por que se quito ese campo): si hubo `llm_decision`,
+    # `validation` tuvo que ejecutarse justo despues.
+    statuses["validation"] = "done" if llm_decision is not None else "pending"
+
+    if llm_decision is None:
+        statuses["human_escalation"] = "pending"
+    elif requires_human:
+        statuses["human_escalation"] = "done" if human_feedback is not None else "waiting"
+    else:
+        statuses["human_escalation"] = "skipped"
+
+    statuses["final_decision"] = "done" if outcome is not None else ("waiting" if is_paused else "pending")
+    return statuses
+
+
+def build_graph_dot(status_by_node: dict[str, str]) -> str:
+    """Genera el DOT del pipeline de `build.py`, coloreando cada nodo segun
+    `status_by_node` (ver `compute_node_statuses`). Se renderiza con
+    `st.graphviz_chart(...)`, que no necesita graphviz instalado en el
+    sistema: Streamlit lo dibuja en el navegador a partir del texto DOT."""
+
+    def node(key: str, label: str) -> str:
+        fill, font, style = _NODE_STYLE[status_by_node.get(key, "pending")]
+        return f'"{key}" [label="{label}", style="filled,{style}", fillcolor="{fill}", fontcolor="{font}"];'
+
+    return "\n".join(
+        [
+            "digraph pipeline {",
+            "rankdir=LR;",
+            'node [shape=box, fontname="Helvetica", margin="0.2,0.15"];',
+            node("rule_evaluator", "1. Requisitos\nobligatorios"),
+            node("llm_decision", "2. Evaluación\nLLM"),
+            node("validation", "3. Validación"),
+            node("human_escalation", "4. Revisión\nhumana"),
+            node("final_decision", "5. Decisión\nfinal"),
+            '"rule_evaluator" -> "llm_decision" [label="cumple"];',
+            '"rule_evaluator" -> "final_decision" [label="no cumple"];',
+            '"llm_decision" -> "validation";',
+            '"validation" -> "human_escalation" [label="requiere revisión"];',
+            '"validation" -> "final_decision" [label="no requiere revisión"];',
+            '"human_escalation" -> "final_decision";',
+            "}",
+        ]
+    )
+
+
+def render_pipeline_diagram(result: dict[str, Any], is_paused: bool) -> None:
+    """Dibuja el pipeline coloreado con el camino que siguio este caso."""
+    st.graphviz_chart(build_graph_dot(compute_node_statuses(result, is_paused)), width="stretch")

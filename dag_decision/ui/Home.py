@@ -18,6 +18,9 @@ st.markdown(
     """
 Selecciona una pagina en la barra lateral:
 
+- **Lanzar Lote**: ejecuta el pipeline en serie para varios CVs contra la
+  misma oferta de una sola vez, avisando antes de relanzar sobre un CV que
+  ya tenga un caso previo para esa oferta.
 - **Nuevo Caso**: lanza una candidatura (CV + oferta, ya cargados en BD) a
   traves del pipeline completo (reglas → LLM → validacion → escalacion
   humana si procede → decision final).

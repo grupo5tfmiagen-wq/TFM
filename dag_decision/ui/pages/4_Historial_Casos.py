@@ -20,7 +20,7 @@ def _human_review_label(case) -> str:
     if case.status == "waiting_human":
         return "🕒 Pendiente"
     if case.final_decision and case.final_decision.decided_by == "human":
-        return "Sí"
+        return "✅ Sí"
     return "No"
 
 

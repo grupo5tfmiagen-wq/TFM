@@ -149,7 +149,31 @@ La navegación lateral contiene:
 - **Cola de Escalaciones**: muestra los casos pausados y permite resolverlos.
 - **Historial de Casos**: muestra cada ejecución y su auditoría por nodo.
 - **Metricas**: presenta KPIs y gráficos de decisiones, escalaciones,
-  confianza media del LLM y rendimiento por oferta.
+   confianza media del LLM, tiempo de revisión, filtrado por reglas, coste LLM
+   , rendimiento por oferta y controles de sesgo por institución, sexo y década
+   de nacimiento. Incluye un glosario desplegable para interpretar los resultados.
+
+### Glosario de métricas
+
+| Término | Significado |
+| --- | --- |
+| Caso analizado | Evaluación de un CV frente a una oferta. |
+| Decisión final | Resultado oficial registrado al cerrar el flujo. |
+| Aprobado (`fit`) | El candidato es adecuado para la oferta. |
+| No apto (`not_fit`) | El LLM o revisor determina que no encaja. |
+| Descartado por reglas (`rejected`) | No supera requisitos obligatorios y no pasa al LLM. |
+| Escalación humana | El caso requiere revisión por baja confianza o falta de conclusión. |
+| En cola humana | Escalación aún pendiente de la decisión de un revisor. |
+| Confianza LLM | Seguridad declarada por el modelo en su valoración. |
+| Tasa de aprobación | Casos `fit` sobre las decisiones finales. |
+| Tasa de escalación | Casos escalados sobre los casos analizados. |
+| Tiempo medio de revisión | Minutos entre crear y resolver una escalación. |
+| Filtrado por reglas | Casos `rejected` que no pasan al LLM por incumplir requisitos obligatorios. |
+| Coste estimado LLM | Suma del coste aproximado de llamadas con uso de tokens disponible. |
+| Tiempo hasta decisión | Tiempo medio desde crear un caso hasta registrar su decisión final. |
+| Sesgo por institución educativa | Comparativa de resultados entre instituciones declaradas en el CV. |
+| Sesgo por sexo | Comparativa por sexo, usado solo para auditoría y nunca enviado al modelo. |
+| Sesgo por década de nacimiento | Comparativa por cohortes de edad, usada solo para auditoría. |
 
 ## 6. Recorridos sugeridos
 

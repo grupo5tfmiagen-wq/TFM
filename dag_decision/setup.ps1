@@ -150,6 +150,11 @@ Write-Ok "Checkpointer listo"
 # 9. Prueba de humo
 Write-Step "Verificando conexion y listado de tablas"
 .venv\Scripts\python scripts\check_db_connection.py
+if ($LASTEXITCODE -ne 0) {
+    Write-Fail "Fallo la prueba de humo de conexion a la base de datos."
+    exit 1
+}
+Write-Ok "Conexion y tablas verificadas"
 
 Write-Host ""
 Write-Host "Todo listo. La base de datos local esta operativa." -ForegroundColor Green

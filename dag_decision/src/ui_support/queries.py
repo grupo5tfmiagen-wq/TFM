@@ -16,6 +16,18 @@ from ..db.models.cv_document import CVDocument
 from ..db.models.job_posting import JobPosting
 from ..db.models.node_execution import CaseNodeExecution
 
+_OUTCOME_LABELS = {
+    "fit": "Aprobado",
+    "not_fit": "No apto",
+    "rejected": "Descartado por reglas",
+    "unclear": "Sin conclusion",
+}
+_OUTCOME_ORDER = ("fit", "not_fit", "rejected", "unclear")
+_HUMAN_RESOLUTION_LABELS = {
+    "fit": "Aprobado por revisor",
+    "not_fit": "No apto segun revisor",
+}
+
 
 def list_cv_documents(session: Session) -> list[CVDocument]:
     """CVs disponibles para lanzar un caso nuevo, ordenados por nombre."""
@@ -144,12 +156,22 @@ def get_dashboard_metrics(
         query = query.filter(Case.job_posting_id == job_posting_id)
 
     cases = query.order_by(Case.created_at.asc()).all()
+    return _summarize_dashboard_cases(cases)
+
+
+def _summarize_dashboard_cases(cases: list[Case]) -> dict:
+    """Calcula los KPI a partir de los casos ya cargados para facilitar su prueba aislada."""
     outcomes = Counter(
         case.final_decision.outcome for case in cases if case.final_decision is not None
     )
     escalations = [escalation for case in cases for escalation in case.human_escalations]
-    escalation_resolutions = Counter(
+    human_resolutions = Counter(
         escalation.resolution for escalation in escalations if escalation.resolution
+    )
+    decision_sources = Counter(
+        decision.decided_by or "system"
+        for case in cases
+        if (decision := case.final_decision) is not None
     )
     confidences = [
         float(decision.confidence)
@@ -158,19 +180,73 @@ def get_dashboard_metrics(
         for decision in execution.llm_decisions
         if decision.confidence is not None
     ]
+    llm_executions = [
+        execution
+        for case in cases
+        for execution in case.node_executions
+        if execution.node_key == "llm_decision"
+    ]
+    total_tokens = [
+        value
+        for execution in llm_executions
+        if (value := _numeric_output_value(execution.output_data, "total_tokens")) is not None
+    ]
+    llm_costs = [
+        value
+        for execution in llm_executions
+        if (value := _numeric_output_value(execution.output_data, "estimated_cost_usd")) is not None
+    ]
+    decision_seconds = [
+        (decision.decided_at - case.created_at).total_seconds()
+        for case in cases
+        if (decision := case.final_decision) is not None
+        and decision.decided_at is not None
+        and case.created_at is not None
+        and decision.decided_at >= case.created_at
+    ]
 
     cases_by_day = Counter(
         case.created_at.date().isoformat() for case in cases if case.created_at is not None
     )
+    decisions_by_day = Counter(
+        decision.decided_at.date().isoformat()
+        for case in cases
+        if (decision := case.final_decision) is not None and decision.decided_at is not None
+    )
+    review_minutes = [
+        (escalation.resolved_at - escalation.created_at).total_seconds() / 60
+        for escalation in escalations
+        if escalation.resolved_at is not None
+        and escalation.created_at is not None
+        and escalation.resolved_at >= escalation.created_at
+    ]
+
     jobs: dict[str, dict] = {}
     for case in cases:
         title = case.job_posting.titulo if case.job_posting else "Oferta no disponible"
-        summary = jobs.setdefault(title, {"oferta": title, "casos": 0, "fit": 0, "cerrados": 0})
+        job_key = str(case.job_posting_id) if case.job_posting_id else title
+        summary = jobs.setdefault(
+            job_key,
+            {
+                "oferta": title,
+                "casos": 0,
+                "decisiones_finales": 0,
+                "aprobados": 0,
+                "no_aptos": 0,
+                "descartados_por_reglas": 0,
+                "escalados": 0,
+            },
+        )
         summary["casos"] += 1
+        summary["escalados"] += int(bool(case.human_escalations))
         if case.final_decision:
-            summary["cerrados"] += 1
+            summary["decisiones_finales"] += 1
             if case.final_decision.outcome == "fit":
-                summary["fit"] += 1
+                summary["aprobados"] += 1
+            elif case.final_decision.outcome == "not_fit":
+                summary["no_aptos"] += 1
+            elif case.final_decision.outcome == "rejected":
+                summary["descartados_por_reglas"] += 1
 
     # Sesgo por institucion educativa: no requiere ningun campo nuevo en el
     # esquema, se lee directamente de `Case.payload` (candidate.cv.education),
@@ -181,7 +257,7 @@ def get_dashboard_metrics(
     for case in cases:
         if case.final_decision is None:
             continue
-        education = ((case.payload or {}).get("candidate") or {}).get("cv", {}).get("education", [])
+        education = ((getattr(case, "payload", {}) or {}).get("candidate") or {}).get("cv", {}).get("education", [])
         seen_institutions = {entry.get("institution") for entry in education if entry.get("institution")}
         for institution in seen_institutions:
             summary = institutions.setdefault(institution, {"institucion": institution, "casos": 0, "fit": 0})
@@ -189,22 +265,57 @@ def get_dashboard_metrics(
             if case.final_decision.outcome == "fit":
                 summary["fit"] += 1
 
-    closed_cases = sum(outcomes.values())
+    final_decisions = sum(outcomes.values())
     fit_cases = outcomes["fit"]
+    escalated_cases = len({escalation.case_id for escalation in escalations})
+    pending_escalations = len({
+        escalation.case_id for escalation in escalations if escalation.status == "pending"
+    })
+
+    known_outcomes = [
+        {"resultado": _OUTCOME_LABELS[outcome], "casos": outcomes[outcome]}
+        for outcome in _OUTCOME_ORDER
+        if outcomes[outcome]
+    ]
+    other_outcomes = [
+        {"resultado": outcome.replace("_", " ").capitalize(), "casos": count}
+        for outcome, count in sorted(outcomes.items())
+        if outcome not in _OUTCOME_LABELS
+    ]
     return {
         "total_cases": len(cases),
-        "closed_cases": closed_cases,
-        "pending_escalations": sum(escalation.status == "pending" for escalation in escalations),
-        "escalated_cases": len({escalation.case_id for escalation in escalations}),
-        "fit_rate": (fit_cases / closed_cases * 100) if closed_cases else 0.0,
+        "closed_cases": final_decisions,
+        "final_decisions": final_decisions,
+        "open_cases": len(cases) - final_decisions,
+        "fit_cases": fit_cases,
+        "not_fit_cases": outcomes["not_fit"],
+        "rejected_cases": outcomes["rejected"],
+        "pending_escalations": pending_escalations,
+        "escalated_cases": escalated_cases,
+        "human_decisions": decision_sources["human"],
+        "fit_rate": (fit_cases / final_decisions * 100) if final_decisions else 0.0,
+        "escalation_rate": (escalated_cases / len(cases) * 100) if cases else 0.0,
+        "rule_filter_rate": (outcomes["rejected"] / len(cases) * 100) if cases else 0.0,
         "average_confidence": (sum(confidences) / len(confidences) * 100) if confidences else None,
-        "outcomes": [
-            {"resultado": outcome, "casos": count}
-            for outcome, count in sorted(outcomes.items())
+        "average_human_review_minutes": sum(review_minutes) / len(review_minutes) if review_minutes else None,
+        "average_decision_seconds": sum(decision_seconds) / len(decision_seconds) if decision_seconds else None,
+        "llm_calls": len(llm_executions),
+        "llm_usage_records": len(llm_costs),
+        "total_llm_tokens": int(sum(total_tokens)) if total_tokens else None,
+        "total_llm_cost_usd": sum(llm_costs) if llm_costs else None,
+        "outcomes": known_outcomes + other_outcomes,
+        "human_resolutions": [
+            {
+                "resolucion": _HUMAN_RESOLUTION_LABELS.get(
+                    resolution, resolution.replace("_", " ").capitalize()
+                ),
+                "casos": count,
+            }
+            for resolution, count in sorted(human_resolutions.items())
         ],
         "escalation_resolutions": [
             {"resolucion": resolution, "casos": count}
-            for resolution, count in sorted(escalation_resolutions.items())
+            for resolution, count in sorted(human_resolutions.items())
         ],
         "institutions": [
             {
@@ -213,18 +324,40 @@ def get_dashboard_metrics(
             }
             for summary in sorted(institutions.values(), key=lambda item: item["casos"], reverse=True)
         ],
-        "by_sex": _bias_group_stats(cases, lambda case: case.cv_document.sexo if case.cv_document else None),
-        "by_birth_decade": _bias_group_stats(cases, lambda case: _birth_decade(case.cv_document)),
+        "by_sex": _bias_group_stats(
+            cases, lambda case: getattr(case, "cv_document", None).sexo if getattr(case, "cv_document", None) else None
+        ),
+        "by_birth_decade": _bias_group_stats(cases, lambda case: _birth_decade(getattr(case, "cv_document", None))),
         "cases_by_day": [
             {"fecha": day, "casos": count} for day, count in sorted(cases_by_day.items())
+        ],
+        "activity_by_day": [
+            {
+                "fecha": day,
+                "casos_iniciados": cases_by_day[day],
+                "decisiones_finales": decisions_by_day[day],
+            }
+            for day in sorted(set(cases_by_day) | set(decisions_by_day))
         ],
         "jobs": [
             {
                 **summary,
-                "tasa_fit": round(summary["fit"] / summary["cerrados"] * 100, 1)
-                if summary["cerrados"]
+                "tasa_aprobacion": round(summary["aprobados"] / summary["decisiones_finales"] * 100, 1)
+                if summary["decisiones_finales"]
                 else None,
             }
             for summary in sorted(jobs.values(), key=lambda item: item["casos"], reverse=True)
         ],
     }
+
+
+def _numeric_output_value(output_data: dict | None, key: str) -> float | None:
+    """Obtiene un valor numérico no negativo de la salida JSON de un nodo."""
+    value = (output_data or {}).get(key)
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number >= 0 else None

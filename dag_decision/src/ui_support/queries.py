@@ -325,8 +325,8 @@ def _summarize_dashboard_cases(cases: list[Case]) -> dict:
             for summary in sorted(institutions.values(), key=lambda item: item["casos"], reverse=True)
         ],
         "by_sex": _bias_group_stats(
-            cases, lambda case: getattr(case, "cv_document", None).sexo if getattr(case, "cv_document", None) else None
-        ),
+            cases, lambda case: _normalize_sexo(case.cv_document.sexo) if case.cv_document else None,
+            ),
         "by_birth_decade": _bias_group_stats(cases, lambda case: _birth_decade(getattr(case, "cv_document", None))),
         "cases_by_day": [
             {"fecha": day, "casos": count} for day, count in sorted(cases_by_day.items())
@@ -361,3 +361,16 @@ def _numeric_output_value(output_data: dict | None, key: str) -> float | None:
     except (TypeError, ValueError):
         return None
     return number if number >= 0 else None
+
+def _normalize_sexo(value: str | None) -> str | None:
+    """Normaliza variantes de sexo (M/F, hombre/mujer, mayus/minus, espacios)
+    a una unica etiqueta por categoria, para que el dashboard de sesgos no
+    las cuente como grupos distintos."""
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    if normalized in {"m", "masculino", "hombre", "h"}:
+        return "Hombre"
+    if normalized in {"f", "femenino", "mujer"}:
+        return "Mujer"
+    return value.strip().title()  # valor inesperado: se muestra tal cual, sin descartarlo

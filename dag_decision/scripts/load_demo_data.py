@@ -35,6 +35,10 @@ CV_FIELDS = (
     "habilidades_tecnicas",
     "idiomas",
     "certificaciones",
+    # Campos de auditoria de sesgos: nunca se envian al grafo/LLM (ver
+    # payload_builder.py), solo se usan para las metricas de sesgo del dashboard.
+    "sexo",
+    "anio_nacimiento",
 )
 JOB_FIELDS = (
     "titulo",

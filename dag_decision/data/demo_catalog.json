@@ -1,269 +1,191 @@
 {
+  "job_postings": [
+    {
+      "external_id": "job-backend-python-diversidad-2026",
+      "titulo": "Ingeniero/a Backend Python",
+      "descripcion": "Diseño e implementación de servicios backend en Python para la plataforma de datos del equipo. Se valorará experiencia con sistemas de contenedores y despliegue en la nube.",
+      "requisitos_minimos": {
+        "experiencia_anios": 5,
+        "formacion": "Grado en Ingeniería Informática o equivalente",
+        "habilidades_obligatorias": ["Python", "PostgreSQL", "Docker"],
+        "idiomas": [{ "idioma": "inglés", "nivel": "B2" }]
+      },
+      "requisitos_deseables": {
+        "habilidades_valorables": ["Kubernetes", "LangGraph", "AWS", "FastAPI"],
+        "experiencia_sector": ["astrofísica", "instrumentación científica", "fintech"],
+        "certificaciones": []
+      },
+      "habilidades_requeridas": ["Python", "PostgreSQL", "Docker"],
+      "idiomas_requeridos": [{ "idioma": "inglés", "nivel": "B2" }],
+      "experiencia_minima_anios": 5,
+      "formacion_minima": "Grado en Ingeniería Informática o equivalente",
+      "ubicacion": "La Laguna, Tenerife",
+      "tipo_contrato": "Indefinido",
+      "salario_min": 32000,
+      "salario_max": 42000
+    }
+  ],
   "cv_documents": [
     {
-      "candidate_id": "demo-marta-suarez",
-      "candidate_name": "Marta Suárez Delgado",
-      "original_filename": "marta_suarez_backend.pdf",
+      "candidate_id": "cand-marina-etxeberria",
+      "candidate_name": "Marina Etxeberria Zubizarreta",
+      "sexo": "mujer",
+      "anio_nacimiento": 1962,
+      "original_filename": "cv_marina_etxeberria.pdf",
       "original_format": "pdf",
       "idioma": "es",
-      "texto_extraido": "Ingeniera de software con más de seis años de experiencia backend en Python, PostgreSQL y Docker. Ha desarrollado software de control para instrumentación científica y trabaja con sistemas distribuidos.",
+      "texto_extraido": "Marina Etxeberria Zubizarreta\nIngeniera de software con más de 20 años de experiencia en desarrollo backend, especializada en Python y sistemas distribuidos aplicados a instrumentación científica.\nExperiencia profesional\nTech Lead Backend — Instituto de Astrofísica de Canarias\nMarzo 2015 – Actualidad\nLiderazgo técnico de un equipo de backend en Python/PostgreSQL para sistemas de control de instrumentación astronómica. Contenerización con Docker y orquestación con Kubernetes.\nIngeniera de Software — Telefónica I+D\nEnero 2005 – Febrero 2015\nDesarrollo de servicios backend en Python y bases de datos relacionales para plataformas de telecomunicaciones.\nFormación académica\nLicenciatura en Ingeniería Informática — Universidad Complutense de Madrid — 1986\nHabilidades técnicas\nPython, PostgreSQL, Docker, Kubernetes, Git, Linux\nIdiomas\nEspañol (nativo), Inglés (C1)",
+      "experiencia": [
+        {
+          "empresa": "Instituto de Astrofísica de Canarias",
+          "puesto": "Tech Lead Backend",
+          "fecha_inicio": "2015-03",
+          "fecha_fin": "actualidad",
+          "descripcion": "Liderazgo técnico de un equipo de backend en Python/PostgreSQL para sistemas de control de instrumentación astronómica. Contenerización con Docker y orquestación con Kubernetes."
+        },
+        {
+          "empresa": "Telefónica I+D",
+          "puesto": "Ingeniera de Software",
+          "fecha_inicio": "2005-01",
+          "fecha_fin": "2015-02",
+          "descripcion": "Desarrollo de servicios backend en Python y bases de datos relacionales para plataformas de telecomunicaciones."
+        }
+      ],
+      "formacion": [
+        { "titulo": "Licenciatura en Ingeniería Informática", "institucion": "Universidad Complutense de Madrid", "anio_fin": 1986 }
+      ],
+      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Kubernetes", "Git", "Linux"],
+      "idiomas": [
+        { "idioma": "Español", "nivel": "nativo" },
+        { "idioma": "Inglés", "nivel": "C1" }
+      ],
+      "certificaciones": []
+    },
+    {
+      "candidate_id": "cand-carlos-fernandez",
+      "candidate_name": "Carlos Fernández Moreno",
+      "sexo": "hombre",
+      "anio_nacimiento": 1974,
+      "original_filename": "cv_carlos_fernandez.pdf",
+      "original_format": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Carlos Fernández Moreno\nIngeniero backend con más de 15 años de experiencia en Python, PostgreSQL y despliegue en la nube en el sector financiero.\nExperiencia profesional\nBackend Engineer — Banco Santander\nAbril 2010 – Actualidad\nDesarrollo y mantenimiento de servicios backend críticos en Python, contenerizados con Docker y desplegados en AWS.\nFormación académica\nIngeniería Informática — Universidad Politécnica de Madrid — 2003\nHabilidades técnicas\nPython, PostgreSQL, Docker, Java, AWS\nIdiomas\nEspañol (nativo), Inglés (B2)",
+      "experiencia": [
+        {
+          "empresa": "Banco Santander",
+          "puesto": "Backend Engineer",
+          "fecha_inicio": "2010-04",
+          "fecha_fin": "actualidad",
+          "descripcion": "Desarrollo y mantenimiento de servicios backend críticos en Python, contenerizados con Docker y desplegados en AWS."
+        }
+      ],
+      "formacion": [
+        { "titulo": "Ingeniería Informática", "institucion": "Universidad Politécnica de Madrid", "anio_fin": 2003 }
+      ],
+      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Java", "AWS"],
+      "idiomas": [
+        { "idioma": "Español", "nivel": "nativo" },
+        { "idioma": "Inglés", "nivel": "B2" }
+      ],
+      "certificaciones": []
+    },
+    {
+      "candidate_id": "cand-laura-ibanez",
+      "candidate_name": "Laura Ibáñez Castro",
+      "sexo": "mujer",
+      "anio_nacimiento": 1985,
+      "original_filename": "cv_laura_ibanez.pdf",
+      "original_format": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Laura Ibáñez Castro\nIngeniera backend con 8 años de experiencia en Python y arquitecturas de datos, con interés en soluciones basadas en LLM.\nExperiencia profesional\nIngeniera Backend — Mercadona Tech\nSeptiembre 2018 – Actualidad\nDesarrollo de APIs REST en Python/PostgreSQL, contenerización con Docker y prototipos con LangGraph para automatización de procesos.\nFormación académica\nGrado en Ingeniería Informática — Universidad de Barcelona — 2017\nHabilidades técnicas\nPython, PostgreSQL, Docker, Git, Linux, LangGraph\nIdiomas\nEspañol (nativo), Inglés (B2)",
+      "experiencia": [
+        {
+          "empresa": "Mercadona Tech",
+          "puesto": "Ingeniera Backend",
+          "fecha_inicio": "2018-09",
+          "fecha_fin": "actualidad",
+          "descripcion": "Desarrollo de APIs REST en Python/PostgreSQL, contenerización con Docker y prototipos con LangGraph para automatización de procesos."
+        }
+      ],
+      "formacion": [
+        { "titulo": "Grado en Ingeniería Informática", "institucion": "Universidad de Barcelona", "anio_fin": 2017 }
+      ],
+      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Git", "Linux", "LangGraph"],
+      "idiomas": [
+        { "idioma": "Español", "nivel": "nativo" },
+        { "idioma": "Inglés", "nivel": "B2" }
+      ],
+      "certificaciones": []
+    },
+    {
+      "candidate_id": "cand-diego-molina",
+      "candidate_name": "Diego Molina Reyes",
+      "sexo": "hombre",
+      "anio_nacimiento": 1991,
+      "original_filename": "cv_diego_molina.pdf",
+      "original_format": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Diego Molina Reyes\nIngeniero backend con cerca de 9 años de experiencia combinando startups fintech y consultoría de software.\nExperiencia profesional\nIngeniero de Software — Grupo Empresarial Andalucía\nEnero 2022 – Actualidad\nDesarrollo de microservicios en Python/FastAPI y PostgreSQL, despliegue con Docker.\nBackend Developer — Startup FinTech Sevilla\nEnero 2018 – Diciembre 2021\nDesarrollo de APIs de pagos en Python y PostgreSQL, contenerización con Docker.\nFormación académica\nGrado en Ingeniería Informática — Universidad de Sevilla — 2017\nHabilidades técnicas\nPython, PostgreSQL, Docker, FastAPI, Git\nIdiomas\nEspañol (nativo), Inglés (B2)",
+      "experiencia": [
+        {
+          "empresa": "Grupo Empresarial Andalucía",
+          "puesto": "Ingeniero de Software",
+          "fecha_inicio": "2022-01",
+          "fecha_fin": "actualidad",
+          "descripcion": "Desarrollo de microservicios en Python/FastAPI y PostgreSQL, despliegue con Docker."
+        },
+        {
+          "empresa": "Startup FinTech Sevilla",
+          "puesto": "Backend Developer",
+          "fecha_inicio": "2018-01",
+          "fecha_fin": "2021-12",
+          "descripcion": "Desarrollo de APIs de pagos en Python y PostgreSQL, contenerización con Docker."
+        }
+      ],
+      "formacion": [
+        { "titulo": "Grado en Ingeniería Informática", "institucion": "Universidad de Sevilla", "anio_fin": 2017 }
+      ],
+      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "FastAPI", "Git"],
+      "idiomas": [
+        { "idioma": "Español", "nivel": "nativo" },
+        { "idioma": "Inglés", "nivel": "B2" }
+      ],
+      "certificaciones": []
+    },
+    {
+      "candidate_id": "cand-nerea-suarez",
+      "candidate_name": "Nerea Suárez Delgado",
+      "sexo": "mujer",
+      "anio_nacimiento": 2000,
+      "original_filename": "cv_nerea_suarez.pdf",
+      "original_format": "pdf",
+      "idioma": "es",
+      "texto_extraido": "Nerea Suárez Delgado\nIngeniera de software con algo más de 5 años de experiencia en desarrollo backend, especializada en Python y sistemas de control para instrumentación científica.\nExperiencia profesional\nIngeniera de Software — Observatorio Técnico Atlántico\nJulio 2023 – Actualidad\nDesarrollo de software de control para instrumentación científica en Python y C++, contenerización con Docker.\nIngeniera Backend Junior — Empresa Soluciones Digitales SL\nFebrero 2021 – Junio 2023\nDesarrollo de APIs REST en Python y PostgreSQL para una plataforma de gestión interna.\nFormación académica\nGrado en Ingeniería Informática — Universidad de La Laguna — 2021\nHabilidades técnicas\nPython, PostgreSQL, Docker, Git, C++\nIdiomas\nEspañol (nativo), Inglés (B2)",
       "experiencia": [
         {
           "empresa": "Observatorio Técnico Atlántico",
           "puesto": "Ingeniera de Software",
           "fecha_inicio": "2023-07",
           "fecha_fin": "actualidad",
-          "descripcion": "Software de control e integración de datos para instrumentación científica."
+          "descripcion": "Desarrollo de software de control para instrumentación científica en Python y C++, contenerización con Docker."
         },
         {
-          "empresa": "Soluciones Digitales SL",
-          "puesto": "Ingeniera Backend",
-          "fecha_inicio": "2020-01",
+          "empresa": "Empresa Soluciones Digitales SL",
+          "puesto": "Ingeniera Backend Junior",
+          "fecha_inicio": "2021-02",
           "fecha_fin": "2023-06",
-          "descripcion": "APIs REST y servicios Python con PostgreSQL, Docker y despliegue continuo."
+          "descripcion": "Desarrollo de APIs REST en Python y PostgreSQL para una plataforma de gestión interna."
         }
       ],
       "formacion": [
-        {
-          "titulo": "Grado en Ingeniería Informática",
-          "institucion": "Universidad de La Laguna",
-          "anio_fin": 2019
-        }
+        { "titulo": "Grado en Ingeniería Informática", "institucion": "Universidad de La Laguna", "anio_fin": 2021 }
       ],
-      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Git", "Linux", "C++"],
+      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Git", "C++"],
       "idiomas": [
-        {"idioma": "Español", "nivel": "nativo"},
-        {"idioma": "Inglés", "nivel": "B2"}
+        { "idioma": "Español", "nivel": "nativo" },
+        { "idioma": "Inglés", "nivel": "B2" }
       ],
       "certificaciones": []
-    },
-    {
-      "candidate_id": "demo-lucas-romero",
-      "candidate_name": "Lucas Romero Martín",
-      "original_filename": "lucas_romero_backend_junior.pdf",
-      "original_format": "pdf",
-      "idioma": "es",
-      "texto_extraido": "Desarrollador backend junior con experiencia inicial en Python, FastAPI, PostgreSQL y Docker.",
-      "experiencia": [
-        {
-          "empresa": "StartApps Canarias",
-          "puesto": "Desarrollador Backend Junior",
-          "fecha_inicio": "2025-02",
-          "fecha_fin": "actualidad",
-          "descripcion": "Desarrollo y pruebas de APIs con Python, FastAPI y PostgreSQL."
-        }
-      ],
-      "formacion": [
-        {
-          "titulo": "Grado en Ingeniería Informática",
-          "institucion": "Universidad de Las Palmas de Gran Canaria",
-          "anio_fin": 2024
-        }
-      ],
-      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Git", "FastAPI"],
-      "idiomas": [
-        {"idioma": "Español", "nivel": "nativo"},
-        {"idioma": "Inglés", "nivel": "B1"}
-      ],
-      "certificaciones": []
-    },
-    {
-      "candidate_id": "demo-elena-vargas",
-      "candidate_name": "Elena Vargas León",
-      "original_filename": "elena_vargas_data_engineer.pdf",
-      "original_format": "pdf",
-      "idioma": "es",
-      "texto_extraido": "Data engineer con seis años de experiencia construyendo pipelines de datos en Python, SQL y Airflow. Experiencia con Docker, Spark, dbt y plataformas cloud.",
-      "experiencia": [
-        {
-          "empresa": "DataLab Tenerife",
-          "puesto": "Data Engineer",
-          "fecha_inicio": "2023-01",
-          "fecha_fin": "actualidad",
-          "descripcion": "Pipelines de datos, orquestación con Airflow y transformación con dbt."
-        },
-        {
-          "empresa": "Analítica Atlántica",
-          "puesto": "Analista de Datos",
-          "fecha_inicio": "2020-10",
-          "fecha_fin": "2022-12",
-          "descripcion": "Modelado SQL y automatización de procesos de calidad de datos."
-        }
-      ],
-      "formacion": [
-        {
-          "titulo": "Máster en Ciencia de Datos",
-          "institucion": "Universidad de La Laguna",
-          "anio_fin": 2020
-        }
-      ],
-      "habilidades_tecnicas": ["Python", "SQL", "Airflow", "Docker", "Git", "Spark", "dbt", "GCP"],
-      "idiomas": [
-        {"idioma": "Español", "nivel": "nativo"},
-        {"idioma": "Inglés", "nivel": "C1"}
-      ],
-      "certificaciones": ["Google Cloud Associate Cloud Engineer"]
-    },
-    {
-      "candidate_id": "demo-diego-navarro",
-      "candidate_name": "Diego Navarro Ruiz",
-      "original_filename": "diego_navarro_mlops.pdf",
-      "original_format": "pdf",
-      "idioma": "es",
-      "texto_extraido": "Ingeniero MLOps y plataforma con siete años de experiencia automatizando despliegues de servicios de datos y aprendizaje automático en Kubernetes y AWS.",
-      "experiencia": [
-        {
-          "empresa": "ML Platform Iberia",
-          "puesto": "Ingeniero MLOps",
-          "fecha_inicio": "2023-01",
-          "fecha_fin": "actualidad",
-          "descripcion": "Despliegue y monitorización de modelos con Kubernetes, MLflow, Terraform y AWS."
-        },
-        {
-          "empresa": "CloudOps SL",
-          "puesto": "Ingeniero DevOps",
-          "fecha_inicio": "2019-09",
-          "fecha_fin": "2022-12",
-          "descripcion": "Infraestructura como código, CI/CD y operación de plataformas Docker."
-        }
-      ],
-      "formacion": [
-        {
-          "titulo": "Grado en Ingeniería Informática",
-          "institucion": "Universidad de La Laguna",
-          "anio_fin": 2019
-        }
-      ],
-      "habilidades_tecnicas": ["Python", "Docker", "Kubernetes", "Git", "Terraform", "AWS", "MLflow", "CI/CD"],
-      "idiomas": [
-        {"idioma": "Español", "nivel": "nativo"},
-        {"idioma": "Inglés", "nivel": "C1"}
-      ],
-      "certificaciones": ["AWS Certified Solutions Architect"]
-    },
-    {
-      "candidate_id": "demo-ana-morales",
-      "candidate_name": "Ana Morales Pérez",
-      "original_filename": "ana_morales_fullstack.pdf",
-      "original_format": "pdf",
-      "idioma": "es",
-      "texto_extraido": "Desarrolladora full-stack con tres años de experiencia en aplicaciones web. Trabaja con Python, React, TypeScript, PostgreSQL y Docker.",
-      "experiencia": [
-        {
-          "empresa": "Producto Digital Canario",
-          "puesto": "Desarrolladora Full-stack",
-          "fecha_inicio": "2023-08",
-          "fecha_fin": "actualidad",
-          "descripcion": "Aplicaciones web con React, TypeScript, Python, PostgreSQL y Docker."
-        }
-      ],
-      "formacion": [
-        {
-          "titulo": "Grado en Ingeniería Informática",
-          "institucion": "Universidad de La Laguna",
-          "anio_fin": 2023
-        }
-      ],
-      "habilidades_tecnicas": ["Python", "PostgreSQL", "Docker", "Git", "React", "TypeScript"],
-      "idiomas": [
-        {"idioma": "Español", "nivel": "nativo"},
-        {"idioma": "Inglés", "nivel": "B2"}
-      ],
-      "certificaciones": []
-    }
-  ],
-  "job_postings": [
-    {
-      "external_id": "puesto-backend-senior-2026",
-      "titulo": "Backend Senior - Python y Sistemas Distribuidos",
-      "descripcion": "Diseño e implementación de APIs REST, microservicios y sistemas distribuidos de alta disponibilidad.",
-      "requisitos_minimos": {
-        "experiencia_anios": 5,
-        "formacion": "Grado en Ingeniería Informática o similar",
-        "habilidades_obligatorias": ["Python", "PostgreSQL", "Docker", "Git"],
-        "idiomas": [{"idioma": "Inglés", "nivel": "B2"}]
-      },
-      "requisitos_deseables": {
-        "habilidades_valorables": ["Kubernetes", "Redis", "RabbitMQ", "AWS"],
-        "experiencia_sector": "Sistemas de control o instrumentación científica"
-      },
-      "habilidades_requeridas": ["Python", "PostgreSQL", "Docker", "Git"],
-      "idiomas_requeridos": [{"idioma": "Inglés", "nivel": "B2"}],
-      "experiencia_minima_anios": 5,
-      "formacion_minima": "Grado en Ingeniería Informática",
-      "ubicacion": "Tenerife, España (híbrido)",
-      "tipo_contrato": "Indefinido",
-      "salario_min": 45000,
-      "salario_max": 55000
-    },
-    {
-      "external_id": "puesto-data-engineer-2026",
-      "titulo": "Data Engineer - Plataformas Analíticas",
-      "descripcion": "Construcción de pipelines fiables, modelos de datos y procesos de calidad para una plataforma analítica.",
-      "requisitos_minimos": {
-        "experiencia_anios": 4,
-        "formacion": "Grado en Ingeniería Informática, Matemáticas o similar",
-        "habilidades_obligatorias": ["Python", "SQL", "Airflow", "Docker", "Git"],
-        "idiomas": [{"idioma": "Inglés", "nivel": "B2"}]
-      },
-      "requisitos_deseables": {
-        "habilidades_valorables": ["Spark", "dbt", "GCP"],
-        "experiencia_sector": "Plataformas de datos"
-      },
-      "habilidades_requeridas": ["Python", "SQL", "Airflow", "Docker", "Git"],
-      "idiomas_requeridos": [{"idioma": "Inglés", "nivel": "B2"}],
-      "experiencia_minima_anios": 4,
-      "formacion_minima": "Grado en Ingeniería Informática, Matemáticas o similar",
-      "ubicacion": "Remoto desde España",
-      "tipo_contrato": "Indefinido",
-      "salario_min": 42000,
-      "salario_max": 52000
-    },
-    {
-      "external_id": "puesto-mlops-2026",
-      "titulo": "Ingeniero/a MLOps - Plataforma de IA",
-      "descripcion": "Industrialización, despliegue y monitorización de modelos de aprendizaje automático.",
-      "requisitos_minimos": {
-        "experiencia_anios": 5,
-        "formacion": "Grado en Ingeniería Informática o similar",
-        "habilidades_obligatorias": ["Python", "Docker", "Kubernetes", "Git"],
-        "idiomas": [{"idioma": "Inglés", "nivel": "B2"}]
-      },
-      "requisitos_deseables": {
-        "habilidades_valorables": ["MLflow", "Terraform", "AWS", "CI/CD"],
-        "experiencia_sector": "Operación de plataformas de datos o IA"
-      },
-      "habilidades_requeridas": ["Python", "Docker", "Kubernetes", "Git"],
-      "idiomas_requeridos": [{"idioma": "Inglés", "nivel": "B2"}],
-      "experiencia_minima_anios": 5,
-      "formacion_minima": "Grado en Ingeniería Informática",
-      "ubicacion": "Tenerife, España (híbrido)",
-      "tipo_contrato": "Indefinido",
-      "salario_min": 50000,
-      "salario_max": 62000
-    },
-    {
-      "external_id": "puesto-backend-junior-2026",
-      "titulo": "Backend Junior - APIs Python",
-      "descripcion": "Desarrollo y mantenimiento de APIs Python para productos internos.",
-      "requisitos_minimos": {
-        "experiencia_anios": 2,
-        "formacion": "Formación técnica en desarrollo de software",
-        "habilidades_obligatorias": ["Python", "PostgreSQL", "Git"],
-        "idiomas": [{"idioma": "Inglés", "nivel": "B1"}]
-      },
-      "requisitos_deseables": {
-        "habilidades_valorables": ["FastAPI", "Docker", "Pytest"],
-        "experiencia_sector": "Productos web"
-      },
-      "habilidades_requeridas": ["Python", "PostgreSQL", "Git"],
-      "idiomas_requeridos": [{"idioma": "Inglés", "nivel": "B1"}],
-      "experiencia_minima_anios": 2,
-      "formacion_minima": "Formación técnica en desarrollo de software",
-      "ubicacion": "Santa Cruz de Tenerife, España",
-      "tipo_contrato": "Indefinido",
-      "salario_min": 26000,
-      "salario_max": 32000
     }
   ]
 }

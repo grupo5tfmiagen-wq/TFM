@@ -81,6 +81,8 @@ from ..escalation.service import (
     get_pending_escalation,
     resolve_escalation,
 )
+from .anonymization import candidate_view_for_llm
+from .requirements import check_education, check_languages
 from .state import CaseState
 from .tracing import traced_node
 
@@ -179,17 +181,25 @@ def _years_of_experience(experience_entries: list[dict]) -> float:
 def rule_evaluator_node(state: CaseState) -> dict:
     """Modulo 2: Rule Evaluator.
 
-    Dos reglas obligatorias, tomadas de `rule_node` en DAGEngine.py mas la de
-    anos de experiencia pedida como ampliacion:
+    Comprueba los requisitos obligatorios de la oferta
+    (`job_profile.mandatory_requirements`) frente al CV:
 
-    1. Habilidades tecnicas obligatorias (`job_profile.mandatory_requirements.technical_skills`)
-       frente a las del CV (`candidate.cv.technical_skills`).
-    2. Anos de experiencia minimos (`job_profile.mandatory_requirements.min_years_experience`),
-       calculados a partir del historial `candidate.cv.experience` (ver `_years_of_experience`).
+    1. Habilidades tecnicas obligatorias (`technical_skills`).
+    2. Anos de experiencia minimos (`min_years_experience`), calculados a
+       partir del historial `candidate.cv.experience` (ver `_years_of_experience`).
+    3. Idiomas obligatorios con su nivel minimo (`languages`), en la escala
+       del MCER (ver `requirements.check_languages`).
+    4. Nivel minimo de formacion (`min_education`): grado, master, etc. La
+       disciplina ("Informatica o equivalente") no se evalua aqui; es un
+       juicio que se deja al LLM y al revisor (ver `requirements.check_education`).
 
-    Si falla cualquiera de las dos, el caso queda descartado (`passed=False`)
+    Si falla cualquiera de ellos, el caso queda descartado (`passed=False`)
     y `build.py::_route_after_rules` lo envia directamente a
     `final_decision`, sin pasar por el LLM.
+
+    Un requisito cuyo dato no se puede interpretar (p. ej. nivel de idioma
+    "fluido") no descarta: se anota en `unverified_requirements` y
+    `validation_node` obliga a revision humana.
     """
     payload = state["payload"] # type: ignore
     with traced_node(state["case_id"], "rule_evaluator", payload) as (session, node_execution): # type: ignore
@@ -201,30 +211,48 @@ def rule_evaluator_node(state: CaseState) -> dict:
         missing_skills = sorted(required_skills - candidate_skills)
 
         years_experience = _years_of_experience(cv.get("experience", []))
-        min_years_required = requirements.get("min_years_experience", 0)
+        min_years_required = requirements.get("min_years_experience") or 0
         meets_experience = years_experience >= min_years_required
 
-        passed = not missing_skills and meets_experience
+        language_check = check_languages(requirements.get("languages") or [], cv.get("languages") or [])
+        education_check = check_education(requirements.get("min_education"), cv.get("education") or [])
+
+        unverified_requirements = [
+            f"idioma {item['language']}: nivel exigido {item['required']!r}, nivel del CV {item['candidate']!r}"
+            for item in language_check["unverified"]
+        ]
+        if education_check["unverified"]:
+            unverified_requirements.append(f"formacion: {education_check['reason']}")
+
+        passed = (
+            not missing_skills
+            and meets_experience
+            and language_check["met"]
+            and education_check["met"]
+        )
+
+        rule_result = {
+            "passed": passed,
+            "missing_skills": missing_skills,
+            "years_experience": years_experience,
+            "min_years_required": min_years_required,
+            "meets_experience": meets_experience,
+            "missing_languages": language_check["missing"],
+            "meets_education": education_check["met"],
+            "required_education_level": education_check["required_level"],
+            "candidate_education_level": education_check["candidate_level"],
+            "unverified_requirements": unverified_requirements,
+        }
 
         session.add(
             RuleEvaluation(
                 node_execution_id=node_execution.id,
                 rule_name="candidate_min_requirements",
                 result_bool=passed,
-                details={
-                    "missing_skills": missing_skills,
-                    "years_experience": years_experience,
-                    "min_years_required": min_years_required,
-                    "meets_experience": meets_experience,
-                },
+                details=rule_result,
             )
         )
-        node_execution.output_data = {
-            "passed": passed,
-            "missing_skills": missing_skills,
-            "years_experience": years_experience,
-            "min_years_required": min_years_required,
-        }
+        node_execution.output_data = rule_result
 
         _tag_current_run(
             tags=[f"rule_passed:{passed}"],
@@ -233,17 +261,13 @@ def rule_evaluator_node(state: CaseState) -> dict:
                 "missing_skills": missing_skills,
                 "years_experience": years_experience,
                 "min_years_required": min_years_required,
+                "missing_languages": language_check["missing"],
+                "meets_education": education_check["met"],
+                "unverified_requirements": unverified_requirements,
             },
         )
 
-    return {
-        "rule_result": {
-            "passed": passed,
-            "missing_skills": missing_skills,
-            "years_experience": years_experience,
-            "min_years_required": min_years_required,
-        }
-    }
+    return {"rule_result": rule_result}
 
 
 @traceable(name="llm_decision")
@@ -263,12 +287,19 @@ def llm_decision_node(state: CaseState) -> dict:
     desired_skills = sorted(
         payload.get("job_profile", {}).get("desired_requirements", {}).get("technical_skills", [])
     )
+    # Minimizacion de datos: el LLM recibe una vista seudonimizada del
+    # candidato (sin nombre, contacto, fechas ni institucion), no el bloque
+    # `candidate` completo. Ver `anonymization.candidate_view_for_llm`.
+    candidate_view = candidate_view_for_llm(payload.get("candidate"))
     prompt = (
         "Evalua si el siguiente candidato encaja en el puesto ofertado, "
         "prestando especial atencion a su afinidad con las habilidades "
         "deseables del perfil (no obligatorias, mejoran el ajuste). "
+        "Basa tu valoracion solo en la experiencia, la formacion y las "
+        "competencias profesionales; no tengas en cuenta el sexo, la edad, "
+        "el origen ni ninguna otra caracteristica personal. "
         "Responde de forma estructurada, con una justificacion breve.\n\n"
-        f"Datos del candidato: {payload.get('candidate')}\n\n"
+        f"Datos del candidato: {candidate_view}\n\n"
         f"Habilidades deseables del puesto: {desired_skills}"
     )
     with traced_node(state["case_id"], "llm_decision", {"prompt": prompt}) as (session, node_execution): # type: ignore
@@ -320,22 +351,26 @@ def llm_decision_node(state: CaseState) -> dict:
 
 @traceable(name="validation")
 def validation_node(state: CaseState) -> dict:
-    """Modulo 4: comprueba la coherencia de la salida del LLM antes de confiar en ella.
+    """Modulo 4: comprueba la salida del LLM y decide si el caso necesita revision humana.
 
-    Solo se resuelve sin escalar cuando el caso es "obvio": el LLM dio un
-    veredicto decidido (`fit`/`not_fit`, nunca `unclear`) con una confianza
-    muy alta (`CONFIDENCE_THRESHOLD`, 0.9 por defecto — deliberadamente alto,
-    para que solo pasen automaticamente los casos que cumplen todo o los que
-    no tienen ningun sentido para el puesto). Cualquier otro caso escala a
-    revision humana, con el motivo ya explicado via `justification` (ver
-    `human_escalation_node`).
+    Solo se resuelve sin escalar una valoracion favorable (`fit`) con
+    confianza igual o superior a `CONFIDENCE_THRESHOLD` (0.9 por defecto,
+    deliberadamente alto) y sin requisitos obligatorios pendientes de
+    verificar. Escala a revision humana en cualquier otro caso:
 
-    El detalle completo (is_valid, motivo, requires_review) queda persistido
-    en la fila `Validation` de este nodo via `traced_node`; al grafo solo le
-    hace falta `requires_human` para decidir la ruta en
-    `build.py::_route_after_validation`, asi que es lo unico que se devuelve
-    al estado (ver la nota en `state.py` sobre por que se elimino el campo
-    `validation`).
+    - etiqueta inesperada;
+    - `not_fit`, sea cual sea la confianza: un rechazo que depende de la
+      valoracion del LLM no se decide de forma automatizada (RGPD art. 22).
+      Los unicos rechazos automaticos son los de `rule_evaluator_node`,
+      basados en requisitos objetivos;
+    - `unclear`;
+    - confianza inferior al umbral;
+    - requisitos obligatorios no verificables (ver `rule_evaluator_node`).
+
+    Los motivos quedan persistidos en `Validation.reason` y en la salida del
+    nodo. Al grafo solo le hace falta `requires_human` para decidir la ruta
+    en `build.py::_route_after_validation`, asi que es lo unico que se
+    devuelve al estado (ver la nota en `state.py`).
     """
     llm_decision = state["llm_decision"] # type: ignore
     with traced_node(state["case_id"], "validation", {"llm_decision": llm_decision}) as (session, node_execution): # type: ignore
@@ -343,8 +378,27 @@ def validation_node(state: CaseState) -> dict:
         confidence = llm_decision.get("confidence", 0.0)
         fit_label = llm_decision.get("fit_label")
         is_valid = fit_label in {"fit", "not_fit", "unclear"}
-        is_obvious = fit_label in {"fit", "not_fit"} and confidence >= CONFIDENCE_THRESHOLD
-        requires_review = (not is_valid) or not is_obvious
+        unverified_requirements = (state.get("rule_result") or {}).get("unverified_requirements") or []
+
+        # Motivos de revision humana, en orden de prioridad. Solo se resuelve
+        # sin escalar una valoracion FAVORABLE (`fit`) con confianza alta y
+        # sin requisitos obligatorios pendientes de verificar.
+        review_reasons: list[str] = []
+        if not is_valid:
+            review_reasons.append("etiqueta inesperada del LLM")
+        elif fit_label == "not_fit":
+            # Un resultado desfavorable basado en la valoracion del LLM nunca
+            # se decide de forma automatizada (RGPD art. 22, RIA art. 14):
+            # los rechazos automaticos quedan limitados a las reglas objetivas.
+            review_reasons.append("el LLM propone no apto: todo rechazo basado en el LLM requiere revision humana")
+        elif fit_label == "unclear":
+            review_reasons.append("el LLM no llega a una conclusion")
+        elif confidence < CONFIDENCE_THRESHOLD:
+            review_reasons.append(f"confianza {confidence:.2f} inferior al umbral {CONFIDENCE_THRESHOLD:.2f}")
+        if unverified_requirements:
+            review_reasons.append("requisitos obligatorios no verificables: " + "; ".join(unverified_requirements))
+
+        requires_review = bool(review_reasons)
 
         llm_decision_id = llm_decision.get("llm_decision_id")
         session.add(
@@ -352,11 +406,15 @@ def validation_node(state: CaseState) -> dict:
                 node_execution_id=node_execution.id,
                 llm_decision_id=uuid.UUID(llm_decision_id) if llm_decision_id else None,
                 is_valid=is_valid,
-                reason=None if is_valid else "unexpected fit_label",
+                reason=" | ".join(review_reasons) or None,
                 requires_review=requires_review,
             )
         )
-        node_execution.output_data = {"is_valid": is_valid, "requires_review": requires_review}
+        node_execution.output_data = {
+            "is_valid": is_valid,
+            "requires_review": requires_review,
+            "review_reasons": review_reasons,
+        }
 
         _tag_current_run(
             tags=[f"requires_review:{requires_review}"],

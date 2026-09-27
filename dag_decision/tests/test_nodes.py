@@ -232,6 +232,60 @@ class TestRuleEvaluatorNode:
         result = nodes.rule_evaluator_node(state)
         assert result["rule_result"]["passed"] is False
 
+    def test_fails_on_insufficient_language_level(self, traced_node_calls):
+        state = _base_state()
+        state["payload"]["candidate"]["cv"]["languages"] = [{"language": "english", "level": "B1"}]
+        state["payload"]["job_profile"]["mandatory_requirements"]["languages"] = [
+            {"language": "english", "min_level": "B2"}
+        ]
+        result = nodes.rule_evaluator_node(state)
+        assert result["rule_result"]["passed"] is False
+        assert result["rule_result"]["missing_languages"][0]["candidate"] == "B1"
+
+    def test_compares_languages_across_spanish_and_english_names(self, traced_node_calls):
+        state = _base_state()
+        state["payload"]["candidate"]["cv"]["languages"] = [{"language": "Inglés", "level": "C1"}]
+        state["payload"]["job_profile"]["mandatory_requirements"]["languages"] = [
+            {"language": "english", "min_level": "B2"}
+        ]
+        result = nodes.rule_evaluator_node(state)
+        assert result["rule_result"]["passed"] is True
+
+    def test_fails_on_missing_required_language(self, traced_node_calls):
+        state = _base_state()
+        state["payload"]["job_profile"]["mandatory_requirements"]["languages"] = [
+            {"language": "english", "min_level": "B2"}
+        ]
+        result = nodes.rule_evaluator_node(state)
+        assert result["rule_result"]["passed"] is False
+
+    def test_fails_on_insufficient_education_level(self, traced_node_calls):
+        state = _base_state()
+        state["payload"]["candidate"]["cv"]["education"] = [
+            {"degree": "Técnico Superior en Desarrollo de Aplicaciones Web (Ciclo Formativo de Grado Superior)"}
+        ]
+        state["payload"]["job_profile"]["mandatory_requirements"]["min_education"] = "Grado en Ingeniería Informática o equivalente"
+        result = nodes.rule_evaluator_node(state)
+        assert result["rule_result"]["passed"] is False
+        assert result["rule_result"]["meets_education"] is False
+
+    def test_passes_with_higher_education_level(self, traced_node_calls):
+        state = _base_state()
+        state["payload"]["candidate"]["cv"]["education"] = [{"degree": "Máster en Inteligencia Artificial"}]
+        state["payload"]["job_profile"]["mandatory_requirements"]["min_education"] = "Degree in Computer Science or equivalent"
+        result = nodes.rule_evaluator_node(state)
+        assert result["rule_result"]["passed"] is True
+
+    def test_unverifiable_language_level_does_not_reject_but_is_flagged(self, traced_node_calls):
+        state = _base_state()
+        state["payload"]["candidate"]["cv"]["languages"] = [{"language": "english", "level": "fluido"}]
+        state["payload"]["job_profile"]["mandatory_requirements"]["languages"] = [
+            {"language": "english", "min_level": "B2"}
+        ]
+        result = nodes.rule_evaluator_node(state)
+        assert result["rule_result"]["passed"] is True
+        assert result["rule_result"]["unverified_requirements"]
+
     def test_persists_rule_evaluation_row(self, traced_node_calls):
         nodes.rule_evaluator_node(_base_state())
         call = traced_node_calls[-1]
@@ -292,6 +346,31 @@ class TestLlmDecisionNode:
 
         prompt = fake_llm.structured.invoked_with
         assert "Kubernetes" in prompt
+        assert "PostgreSQL" in prompt
+
+    def test_prompt_excludes_personal_data(self, monkeypatch, traced_node_calls):
+        assessment = nodes.CandidateAssessment(fit_label="fit", confidence=0.95, justification="...")
+        fake_llm = _FakeLLM({"parsed": assessment, "raw": SimpleNamespace()})
+        monkeypatch.setattr(nodes, "_llm", lambda: fake_llm)
+        state = _base_state()
+        candidate = state["payload"]["candidate"]
+        candidate["id"] = "cand-001"
+        candidate["name"] = "Marina Etxeberria Zubizarreta"
+        candidate["cv"]["education"] = [
+            {"degree": "Licenciatura en Informática", "institution": "Universidad Complutense de Madrid", "end_year": 1986}
+        ]
+        candidate["cv"]["extracted_text"] = (
+            "Marina Etxeberria Zubizarreta\nmarina@example.com · +34 600 000 000\n"
+            "Licenciada en 1986. Experta en Python."
+        )
+
+        nodes.llm_decision_node(state)
+
+        prompt = fake_llm.structured.invoked_with
+        for personal in ("Marina", "Etxeberria", "marina@example.com", "600 000 000", "1986", "Complutense", "cand-001"):
+            assert personal not in prompt
+        assert "Licenciatura en Informática" in prompt
+        assert "Experta en Python" in prompt
 
     def test_missing_usage_metadata_yields_none_cost(self, monkeypatch, traced_node_calls):
         assessment = nodes.CandidateAssessment(fit_label="not_fit", confidence=0.2, justification="...")
@@ -326,10 +405,27 @@ class TestValidationNode:
         result = nodes.validation_node(state)
         assert result["requires_human"] is False
 
-    def test_valid_and_no_review_when_high_confidence_not_fit(self, traced_node_calls):
-        state = _base_state(llm_decision={"fit_label": "not_fit", "confidence": 0.95, "llm_decision_id": None})
+    def test_requires_review_on_not_fit_even_with_high_confidence(self, traced_node_calls):
+        # Un rechazo basado en el LLM nunca se decide de forma automatizada (RGPD art. 22).
+        state = _base_state(llm_decision={"fit_label": "not_fit", "confidence": 0.99, "llm_decision_id": None})
         result = nodes.validation_node(state)
-        assert result["requires_human"] is False
+        assert result["requires_human"] is True
+        reasons = traced_node_calls[-1].node_execution.output_data["review_reasons"]
+        assert any("no apto" in reason for reason in reasons)
+
+    def test_requires_review_when_rule_requirements_are_unverified(self, traced_node_calls):
+        state = _base_state(
+            llm_decision={"fit_label": "fit", "confidence": 0.95, "llm_decision_id": None},
+            rule_result={"passed": True, "unverified_requirements": ["idioma english: nivel del CV 'fluido'"]},
+        )
+        result = nodes.validation_node(state)
+        assert result["requires_human"] is True
+
+    def test_persists_review_reasons_in_validation_row(self, traced_node_calls):
+        state = _base_state(llm_decision={"fit_label": "fit", "confidence": 0.3, "llm_decision_id": None})
+        nodes.validation_node(state)
+        row = traced_node_calls[-1].session.add.call_args[0][0]
+        assert "umbral" in row.reason
 
     def test_requires_review_on_unclear_label_even_with_high_confidence(self, traced_node_calls):
         state = _base_state(llm_decision={"fit_label": "unclear", "confidence": 0.95, "llm_decision_id": None})

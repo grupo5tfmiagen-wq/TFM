@@ -34,6 +34,22 @@ def _rule_rejection_reason(rule_result: dict[str, Any]) -> str:
     if years is not None and min_years is not None and years < min_years:
         reasons.append(f"tiene {years} años de experiencia (se requieren {min_years})")
 
+    for language in rule_result.get("missing_languages") or []:
+        if language.get("candidate"):
+            reasons.append(
+                f"su nivel de {language.get('language')} es {language.get('candidate')} "
+                f"(se requiere {language.get('required')})"
+            )
+        else:
+            reasons.append(f"no acredita {language.get('language')} (se requiere {language.get('required')})")
+
+    if rule_result.get("meets_education") is False:
+        candidate_level = rule_result.get("candidate_education_level") or "ninguna titulación"
+        reasons.append(
+            f"su formación ({candidate_level}) es inferior a la exigida "
+            f"({rule_result.get('required_education_level')})"
+        )
+
     if not reasons:
         return "No cumple los requisitos obligatorios del puesto."
     return "No cumple los requisitos obligatorios: " + "; ".join(reasons) + "."
@@ -53,6 +69,12 @@ def render_rule_result(rule_result: dict[str, Any] | None) -> None:
                 f"Cumple los requisitos obligatorios "
                 f"({years} años de experiencia frente a un mínimo de {min_years})."
             )
+            unverified = rule_result.get("unverified_requirements") or []
+            if unverified:
+                st.warning(
+                    "Requisitos que no se han podido verificar automáticamente "
+                    "(el caso pasará a revisión humana): " + "; ".join(unverified)
+                )
         else:
             st.error(_rule_rejection_reason(rule_result))
 

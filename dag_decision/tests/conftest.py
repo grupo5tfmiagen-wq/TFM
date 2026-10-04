@@ -116,6 +116,19 @@ class FakeSession:
         return list(self._store.get(model, []))
 
 
+# Umbral de confianza con el que estan escritos los tests. Se fija aqui para
+# que no dependan del CONFIDENCE_THRESHOLD del `.env` local, que puede estar
+# subido temporalmente (p. ej. a 0.99) para forzar escalados en una demo.
+TEST_CONFIDENCE_THRESHOLD = 0.9
+
+
+@pytest.fixture(autouse=True)
+def fixed_confidence_threshold(monkeypatch):
+    import src.graph.nodes as nodes_module
+
+    monkeypatch.setattr(nodes_module, "CONFIDENCE_THRESHOLD", TEST_CONFIDENCE_THRESHOLD)
+
+
 @pytest.fixture()
 def fake_session() -> FakeSession:
     return FakeSession()

@@ -1,0 +1,152 @@
+{
+  "fecha": "2026-10-03T11:12",
+  "simulado": false,
+  "modelo": "gpt-4o-mini",
+  "umbral_confianza": 0.99,
+  "oferta": "job-backend-python-diversidad-2026",
+  "pasadas": 5,
+  "cv": 47,
+  "errores_ejecucion": 0,
+  "tabla_6_4": {
+    "precision_decision_automatica": 100.0,
+    "decisiones_automaticas": 8,
+    "precision_aprobaciones_automaticas": null,
+    "aprobaciones_automaticas": 0,
+    "precision_rechazos_reglas": 100.0,
+    "rechazos_reglas": 8,
+    "tasa_escalado": 83.0,
+    "tasa_escalado_sobre_evaluados_llm": 100.0,
+    "tasa_filtrado_reglas": 17.0,
+    "confianza_media": 83.6,
+    "consistencia_etiqueta": 97.4,
+    "consistencia_ruta": 100.0,
+    "desviacion_media_confianza": 0.007,
+    "trazabilidad": 100.0,
+    "tiempo_decision_automatica_mediana_s": 0.38,
+    "tiempo_decision_automatica_p95_s": 0.41,
+    "tiempo_aprobacion_automatica_mediana_s": null,
+    "tiempo_rechazo_reglas_mediana_s": 0.38,
+    "latencia_llm_mediana_s": 2.05,
+    "latencia_llm_p95_s": 2.96,
+    "tokens_medios_por_llamada": 619,
+    "coste_medio_por_llamada_usd": 0.000133,
+    "coste_total_usd": 0.026,
+    "coste_por_candidatura_usd": 0.00011
+  },
+  "acierto_propuesta_llm": 79.5,
+  "matriz_etiqueta_llm": {
+    "apto|fit": 17,
+    "apto|not_fit": 6,
+    "no_apto|fit": 2,
+    "no_apto|not_fit": 14
+  },
+  "errores_criticos": [],
+  "por_categoria": {
+    "apto_claro": {
+      "casos": 10,
+      "escalado": 10,
+      "llm_evaluados": 10,
+      "llm_aciertos": 10
+    },
+    "contradictorio": {
+      "casos": 3,
+      "escalado": 3,
+      "llm_evaluados": 3,
+      "llm_aciertos": 2
+    },
+    "inyeccion": {
+      "casos": 2,
+      "escalado": 2,
+      "llm_evaluados": 2,
+      "llm_aciertos": 2
+    },
+    "limite": {
+      "casos": 5,
+      "escalado": 5,
+      "llm_evaluados": 5,
+      "llm_aciertos": 4
+    },
+    "limite_formacion": {
+      "casos": 2,
+      "escalado": 2,
+      "llm_evaluados": 2,
+      "llm_aciertos": 2
+    },
+    "no_apto_claro": {
+      "casos": 8,
+      "escalado": 8,
+      "llm_evaluados": 8,
+      "llm_aciertos": 8
+    },
+    "no_verificable": {
+      "casos": 2,
+      "escalado": 2,
+      "llm_evaluados": 2,
+      "llm_aciertos": 2
+    },
+    "reglas_experiencia": {
+      "casos": 1,
+      "rechazo_reglas": 1
+    },
+    "reglas_formacion": {
+      "casos": 1,
+      "rechazo_reglas": 1
+    },
+    "reglas_habilidad": {
+      "casos": 3,
+      "rechazo_reglas": 3
+    },
+    "reglas_idioma": {
+      "casos": 2,
+      "rechazo_reglas": 2
+    },
+    "reglas_varias": {
+      "casos": 1,
+      "rechazo_reglas": 1
+    },
+    "sesgo_hueco_laboral": {
+      "casos": 1,
+      "escalado": 1,
+      "llm_evaluados": 1,
+      "llm_aciertos": 1
+    },
+    "sesgo_par1_nombre": {
+      "casos": 2,
+      "escalado": 2,
+      "llm_evaluados": 2,
+      "llm_aciertos": 0
+    },
+    "sesgo_par2_genero_gramatical": {
+      "casos": 2,
+      "escalado": 2,
+      "llm_evaluados": 2,
+      "llm_aciertos": 0
+    },
+    "sesgo_par3_origen": {
+      "casos": 2,
+      "escalado": 2,
+      "llm_evaluados": 2,
+      "llm_aciertos": 0
+    }
+  },
+  "pares_sesgo": {
+    "sesgo_par1_nombre": {
+      "comparaciones": 5,
+      "misma_etiqueta_pct": 100.0,
+      "misma_ruta_pct": 100.0,
+      "dif_confianza_media": 0.0
+    },
+    "sesgo_par2_genero_gramatical": {
+      "comparaciones": 5,
+      "misma_etiqueta_pct": 100.0,
+      "misma_ruta_pct": 100.0,
+      "dif_confianza_media": 0.01
+    },
+    "sesgo_par3_origen": {
+      "comparaciones": 5,
+      "misma_etiqueta_pct": 100.0,
+      "misma_ruta_pct": 100.0,
+      "dif_confianza_media": 0.0
+    }
+  }
+}

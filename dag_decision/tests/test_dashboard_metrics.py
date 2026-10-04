@@ -20,6 +20,8 @@ def _case(
     total_tokens: int | None = None,
     estimated_cost_usd: float | None = None,
     escalations: list | None = None,
+    sexo: str | None = None,
+    anio_nacimiento: int | None = None,
 ):
     final_decision = None
     if outcome:
@@ -35,8 +37,14 @@ def _case(
         output_data["total_tokens"] = total_tokens
     if estimated_cost_usd is not None:
         output_data["estimated_cost_usd"] = estimated_cost_usd
+    cv_document = (
+        SimpleNamespace(sexo=sexo, anio_nacimiento=anio_nacimiento)
+        if sexo is not None or anio_nacimiento is not None
+        else None
+    )
     return SimpleNamespace(
         id=case_id,
+        cv_document=cv_document,
         job_posting_id=job_id,
         job_posting=SimpleNamespace(titulo=job_title),
         created_at=created_at,
@@ -82,6 +90,8 @@ def test_dashboard_metrics_distinguishes_final_outcomes_and_human_review():
             confidence=0.9,
             total_tokens=100,
             estimated_cost_usd=0.01,
+            sexo="mujer",
+            anio_nacimiento=1985,
         ),
         _case(
             "case-2",
@@ -90,6 +100,8 @@ def test_dashboard_metrics_distinguishes_final_outcomes_and_human_review():
             job_title="Oferta A",
             outcome="rejected",
             decided_at=started_at + timedelta(seconds=20),
+            sexo="Hombre",
+            anio_nacimiento=1990,
         ),
         _case(
             "case-3",
@@ -103,6 +115,8 @@ def test_dashboard_metrics_distinguishes_final_outcomes_and_human_review():
             total_tokens=200,
             estimated_cost_usd=0.02,
             escalations=[resolved_escalation],
+            sexo="M",
+            anio_nacimiento=1992,
         ),
         _case(
             "case-4",
@@ -113,6 +127,8 @@ def test_dashboard_metrics_distinguishes_final_outcomes_and_human_review():
             total_tokens=300,
             estimated_cost_usd=0.03,
             escalations=[pending_escalation],
+            sexo="mujer",
+            anio_nacimiento=1980,
         ),
     ]
 
@@ -150,3 +166,27 @@ def test_dashboard_metrics_distinguishes_final_outcomes_and_human_review():
     assert jobs["Oferta A"]["descartados_por_reglas"] == 1
     assert jobs["Oferta B"]["escalados"] == 2
     assert jobs["Oferta B"]["tasa_aprobacion"] == 0
+
+    # Metricas de sesgo: solo cuentan casos cerrados, y "M"/"Hombre" se
+    # normalizan al mismo grupo. case-4 (abierto) no entra en ningun grupo.
+    by_sex = {row["grupo"]: row for row in metrics["by_sex"]}
+    assert by_sex["Mujer"]["casos"] == 1
+    assert by_sex["Mujer"]["tasa_fit"] == 100
+    assert by_sex["Mujer"]["confianza_media"] == pytest.approx(90)
+    assert by_sex["Hombre"]["casos"] == 2
+    assert by_sex["Hombre"]["tasa_fit"] == 0
+    assert by_sex["Hombre"]["tasa_escalacion"] == 50
+    assert by_sex["Hombre"]["confianza_media"] == pytest.approx(40)
+
+    by_decade = {row["grupo"]: row["casos"] for row in metrics["by_birth_decade"]}
+    assert by_decade == {"1980s": 1, "1990s": 2}
+
+
+def test_dashboard_metrics_ignore_cases_without_demographics():
+    started_at = datetime(2026, 9, 10, 9, tzinfo=timezone.utc)
+    cases = [_case("case-1", started_at, job_id="job-a", job_title="Oferta A", outcome="fit")]
+
+    metrics = _summarize_dashboard_cases(cases)
+
+    assert metrics["by_sex"] == []
+    assert metrics["by_birth_decade"] == []

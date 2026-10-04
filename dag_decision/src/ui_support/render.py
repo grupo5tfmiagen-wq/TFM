@@ -149,8 +149,7 @@ def truncate(text: str | None, length: int = 80) -> str:
 # llama a `graph.invoke(...)`, que es bloqueante y no va emitiendo progreso
 # intermedio. Para una version en vivo (ir iluminando cada nodo segun se
 # ejecuta de verdad) haria falta cambiar esa llamada a `graph.stream(...)`
-# en `graph_runner.py` y leer aqui los eventos segun van llegando — no se
-# ha tocado eso porque no forma parte de lo que se tiene a mano ahora mismo.
+# en `graph_runner.py` y leer aqui los eventos segun van llegando.
 
 _NODE_STYLE = {
     "pending": ("#e0e0e0", "black", "solid"),   # aun no le toca / no aplica

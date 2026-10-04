@@ -1,4 +1,4 @@
-"""Minimizacion y seudonimizacion de los datos del candidato antes de enviarlos al LLM.
+"""Minimizacion y anonimizacion de los datos del candidato antes de enviarlos al LLM.
 
 `payload_builder.py` ya deja fuera del grafo el sexo y el ano de nacimiento,
 pero el bloque `candidate` del payload sigue conteniendo datos que permiten
@@ -115,7 +115,7 @@ def candidate_view_for_llm(candidate: dict[str, Any] | None, today: date | None 
       actual, sin fechas.
     - Formacion como titulo, sin institucion ni ano de finalizacion.
     - Habilidades, idiomas y certificaciones tal cual.
-    - Texto libre del CV seudonimizado con `redact_text` (incluidas las
+    - Texto libre del CV anonimizado con `redact_text` (incluidas las
       menciones a las instituciones educativas del CV).
     """
     candidate = candidate or {}

@@ -1,4 +1,4 @@
-"""Script de ejemplo para sembrar un CV en la base de datos (tabla `cv_documents`).
+"""Script para sembrar un CV en la base de datos (tabla `cv_documents`).
 
 Carga `script_pdf_json/cv_ejemplo.json` (ya en el esquema español de
 `CVDocument`, generado por `cv_to_json_openai.py`) e inserta una fila si el
